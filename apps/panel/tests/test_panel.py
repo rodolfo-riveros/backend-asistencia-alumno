@@ -38,7 +38,7 @@ def test_director_entra_y_ve_todas_las_paginas(escuela):
     c = cliente(escuela.director)
     est = escuela.mateo.estudiante
     for url in [
-        "/panel/", "/panel/reportes/", "/panel/estudiantes/", "/panel/estudiantes/nuevo/", f"/panel/estudiantes/{est.pk}/",
+        "/panel/", "/panel/anio/", "/panel/reportes/", "/panel/estudiantes/", "/panel/estudiantes/nuevo/", f"/panel/estudiantes/{est.pk}/",
         "/panel/secciones/", "/panel/secciones/nueva/", f"/panel/secciones/{escuela.s3b.pk}/",
         "/panel/docentes/", "/panel/docentes/nuevo/", f"/panel/docentes/{escuela.marisol.pk}/",
         "/panel/cursos/", f"/panel/horarios/{escuela.s3b.pk}/", "/panel/carnets/",
@@ -55,7 +55,7 @@ def test_usuarios_solo_admin(escuela):
     admin = crear_usuario("admin@demo.edu.pe", "ADMIN")
     c = cliente(admin)
     for url in ("/panel/usuarios/", "/panel/usuarios/nuevo/", "/panel/usuarios/roles/", "/panel/usuarios/roles/nuevo/",
-                f"/panel/usuarios/{escuela.marisol.pk}/", "/panel/configuracion/", "/panel/configuracion/niveles/"):
+                f"/panel/usuarios/{escuela.marisol.pk}/", "/panel/configuracion/", "/panel/secciones/grados/"):
         assert c.get(url).status_code == 200, url
 
 
@@ -76,14 +76,14 @@ def test_clave_temporal_obliga_a_cambiarla(escuela):
 
 
 # ------------------------------------------------------------------ CRUD
-def test_crear_docente_genera_clave_temporal(escuela):
+def test_crear_docente_con_dni_como_clave(escuela):
     r = cliente(escuela.director).post(
-        "/panel/docentes/", {"nombres": "Rosa", "apellidos": "Huamán", "email": "R.Huaman@IE.edu.pe", "is_active": "on"},
+        "/panel/docentes/", {"nombres": "Rosa", "apellidos": "Huamán", "dni": "45678912", "email": "R.Huaman@IE.edu.pe", "is_active": "on"},
         follow=True,
     )
-    assert "Contraseña temporal" in r.content.decode()
+    assert "su DNI como contraseña" in r.content.decode()
     d = Usuario.objects.get(email="r.huaman@ie.edu.pe")
-    assert d.rol_id == "DOCENTE" and d.debe_cambiar_password
+    assert d.rol_id == "DOCENTE" and not d.debe_cambiar_password and d.check_password("45678912")
 
 
 def test_asignar_tutoria_y_curso(escuela):
@@ -109,7 +109,7 @@ def test_horario_detecta_choque_de_docente(escuela):
     a2 = Asignacion.objects.create(seccion=escuela.s5c, curso=curso, docente=escuela.otro)
     BloqueHorario.objects.create(seccion=escuela.s3b, asignacion=a1, dia_semana=1, hora_inicio=time(8), hora_fin=time(8, 45))
     r = cliente(escuela.director).post(f"/panel/horarios/{escuela.s5c.pk}/", {
-        "asignacion": a2.pk, "dia_semana": 1, "hora_inicio": "08:30", "hora_fin": "09:15",
+        "curso": curso.pk, "dias": [1], "hora_inicio": "08:30", "hora_fin": "09:15",
     })
     assert "Choque de horario" in r.content.decode()
     assert BloqueHorario.objects.count() == 1

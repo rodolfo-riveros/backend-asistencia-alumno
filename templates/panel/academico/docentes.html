@@ -13,22 +13,23 @@
 <div class="tarjeta tabla-tarjeta">
   <div class="tabla-scroll">
     <table class="tabla">
-      <thead><tr><th>Docente</th><th>Correo</th><th>Tutoría</th><th>Cursos asignados</th><th>Estado</th></tr></thead>
+      <thead><tr><th>Docente</th><th>DNI</th><th>Correo</th><th>Tutoría</th><th>Cursos asignados</th><th>Estado</th></tr></thead>
       <tbody>
       {% for f in filas %}
         <tr class="fila-link" onclick="location.href='{% url 'panel:docente' f.d.pk %}'">
           <td><span class="persona"><span class="avatar">{{ f.d.iniciales }}</span><a href="{% url 'panel:docente' f.d.pk %}"><strong>{{ f.d.apellidos }}, {{ f.d.nombres }}</strong></a></span></td>
-          <td>{{ f.d.email }}</td>
+          <td>{{ f.d.dni|default:"—" }}</td><td>{{ f.d.email }}</td>
           <td>{% for t in f.tutorias %}<span class="chip info">{{ t }}</span> {% empty %}—{% endfor %}</td>
           <td>{{ f.asignaciones }}</td>
           <td>
             {% if not f.d.is_active %}<span class="chip">Inactivo</span>
+            {% elif not f.d.dni %}<span class="chip aviso">Falta DNI</span>
             {% elif f.d.debe_cambiar_password %}<span class="chip aviso">Clave temporal</span>
             {% else %}<span class="chip ok">Activo</span>{% endif %}
           </td>
         </tr>
       {% empty %}
-        <tr><td colspan="5" class="vacio">Aún no hay docentes registrados.</td></tr>
+        <tr><td colspan="6" class="vacio">Aún no hay docentes registrados.</td></tr>
       {% endfor %}
       </tbody>
     </table>

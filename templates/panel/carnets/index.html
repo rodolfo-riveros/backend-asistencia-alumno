@@ -9,13 +9,13 @@
   </div>
 </header>
 
-<div class="tarjeta tabla-tarjeta" x-data="{ logo: false }">
+<div class="tarjeta tabla-tarjeta">
   <div class="tarjeta-cab">
     <h2>Por sección</h2>
     {% if hay_logo %}
-    <label class="filtros" style="font-size:14px;font-weight:600;gap:6px"><input type="checkbox" x-model="logo" style="width:18px;height:18px;accent-color:var(--ink)"> Incluir logo de la I.E.</label>
+    <span class="nota">Cada carnet lleva el logo de la I.E. y el código QR.</span>
     {% else %}
-    <span class="nota">Sube el logo de la I.E. en <a href="{% url 'panel:configuracion' %}">Configuración</a> para incluirlo.</span>
+    <span class="nota">Sube el logo en <a href="{% url 'panel:configuracion' %}">Institución y reglas</a> para que salga en los carnets.</span>
     {% endif %}
   </div>
   <div class="tabla-scroll">
@@ -36,8 +36,8 @@
           <td>{{ f.hojas }}</td>
           <td class="derecha">
             {% if f.s.con_carnet %}
-            <a class="btn chico primario" target="_blank" :href="'{% url 'panel:carnets_seccion' f.s.pk %}' + (logo ? '?logo=1' : '')" href="{% url 'panel:carnets_seccion' f.s.pk %}">{% icono "imprimir" 14 %}Hoja A4</a>
-            {% if pdf %}<a class="btn chico" target="_blank" :href="'{% url 'panel:carnets_seccion' f.s.pk %}?formato=pdf' + (logo ? '&logo=1' : '')" href="{% url 'panel:carnets_seccion' f.s.pk %}?formato=pdf">PDF</a>{% endif %}
+            <a class="btn chico primario" target="_blank" href="{% url 'panel:carnets_seccion' f.s.pk %}">{% icono "imprimir" 14 %}Hoja A4</a>
+            {% if pdf %}<a class="btn chico" target="_blank" href="{% url 'panel:carnets_seccion' f.s.pk %}?formato=pdf">PDF</a>{% endif %}
             {% endif %}
           </td>
         </tr>

@@ -28,6 +28,10 @@ ICONOS = {
     "cerrar": '<path d="M6 6l12 12"/><path d="M18 6L6 18"/>',
     "documento": '<path d="M7 3h7l4 4v14H7z"/><path d="M10 13h5"/>',
     "alerta": '<circle cx="12" cy="12" r="8"/><path d="M12 8v5"/><path d="M12 16h.01"/>',
+    "inicio": '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+    "anio": '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/><path d="M8 14h3v3H8z"/>',
+    "flecha": '<path d="M5 12h14"/><path d="M13 6l6 6-6 6"/>',
+    "copiar": '<rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 00-2-2H5a2 2 0 00-2 2v9a2 2 0 002 2h3"/>',
     "calendario": '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/>',
 }
 

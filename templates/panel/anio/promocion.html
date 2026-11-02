@@ -1,0 +1,66 @@
+{% extends "panel/base.html" %}
+{% load panel %}
+{% block titulo %}Pasar de año{% endblock %}
+{% block contenido %}
+<header class="encabezado">
+  <div class="encabezado-texto">
+    <span class="contexto"><a href="{% url 'panel:anio' %}">Año escolar</a></span>
+    <h1 class="titulo">Pasar estudiantes de {{ origen.anio }} a {{ destino.anio }}</h1>
+  </div>
+  <form class="filtros" method="get">
+    <label class="filtro-etiqueta"><span>De</span>
+      <select name="origen" onchange="this.form.submit()">{% for a in anios %}<option value="{{ a.pk }}" {% if a.pk == origen.pk %}selected{% endif %}>{{ a.anio }}</option>{% endfor %}</select>
+    </label>
+    <label class="filtro-etiqueta"><span>A</span>
+      <select name="destino" onchange="this.form.submit()">{% for a in anios %}<option value="{{ a.pk }}" {% if a.pk == destino.pk %}selected{% endif %}>{{ a.anio }}</option>{% endfor %}</select>
+    </label>
+  </form>
+</header>
+
+<ol class="guia">
+  <li><strong>1.</strong> Pulsa <em>Pasar a todos</em>: cada salón pasa al grado siguiente (misma letra). El último grado egresa.</li>
+  <li><strong>2.</strong> Entra a cada salón y cambia solo a quien <em>repite</em> o <em>no continúa</em>.</li>
+  <li><strong>3.</strong> Cuando empiecen las clases, <a href="{% url 'panel:anio' %}">activa el año {{ destino.anio }}</a>.</li>
+</ol>
+
+<section class="rejilla-kpi">
+  <div class="kpi oscuro"><span class="kpi-titulo">Matriculados en {{ destino.anio }}</span><span class="kpi-valor">{{ hechos }}</span><span class="kpi-nota">de {{ total }} estudiantes de {{ origen.anio }}</span></div>
+</section>
+
+{% if sin_destino %}
+<div class="errores-form">
+  Faltan secciones en {{ destino.anio }} para: {% for f in sin_destino %}{{ f.seccion.nombre_corto }}{% if not forloop.last %}, {% endif %}{% endfor %}.
+  Créalas en <a href="{% url 'panel:secciones' %}">Grados y secciones</a> (o crea el año copiando las secciones).
+</div>
+{% endif %}
+
+<div class="tarjeta tabla-tarjeta">
+  <div class="tarjeta-cab">
+    <h2>Salones de {{ origen.anio }}</h2>
+    <form method="post" class="inline" onsubmit="return confirm('Se matriculará en {{ destino.anio }} a todos los que aún no tienen sección, en el grado siguiente. ¿Continuar?')">
+      {% csrf_token %}<input type="hidden" name="origen" value="{{ origen.pk }}"><input type="hidden" name="destino" value="{{ destino.pk }}">
+      <button class="btn primario" type="submit">{% icono "flecha" 16 %}Pasar a todos con lo sugerido</button>
+    </form>
+  </div>
+  <div class="tabla-scroll">
+    <table class="tabla">
+      <thead><tr><th>Salón {{ origen.anio }}</th><th>Pasa a ({{ destino.anio }})</th><th>Avance</th><th class="derecha"></th></tr></thead>
+      <tbody>
+      {% for f in filas %}
+        <tr>
+          <td><span class="persona"><span class="badge-seccion">{{ f.seccion.nombre_corto }}</span><span>{{ f.seccion.nombre_largo }}<span class="sub">{{ f.total }} estudiante{{ f.total|pluralize }}</span></span></span></td>
+          <td>{% if f.egresa %}<span class="chip info">Egresan (último grado)</span>{% elif f.sugerida %}<strong>{{ f.sugerida.nombre_corto }}</strong>{% else %}<span class="chip error">Falta crear la sección</span>{% endif %}</td>
+          <td style="width:200px">
+            {% if f.egresa %}<span class="nota">No se matriculan, salvo que repitan</span>
+            {% else %}<div class="registro"><div class="barra-fondo delgada"><div class="barra-relleno" style="width:{% widthratio f.hechos f.total|default:1 100 %}%"></div></div><span class="nota" style="font-size:12px">{{ f.hechos }}/{{ f.total }}</span></div>{% endif %}
+          </td>
+          <td class="derecha"><a class="btn chico" href="{% url 'panel:promocion_seccion' f.seccion.pk %}?destino={{ destino.pk }}">Revisar salón</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="4" class="vacio">{{ origen.anio }} no tiene secciones.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

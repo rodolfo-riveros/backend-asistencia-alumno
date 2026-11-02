@@ -155,3 +155,15 @@ class BloqueHorario(ModeloBase):
             )
             if choque:
                 raise ValidationError(f"Choque de horario: el docente ya tiene {choque}.")
+        if self.seccion_id:
+            ocupado = (
+                BloqueHorario.objects.filter(
+                    seccion_id=self.seccion_id, dia_semana=self.dia_semana,
+                    hora_inicio__lt=self.hora_fin, hora_fin__gt=self.hora_inicio,
+                )
+                .exclude(pk=self.pk)
+                .select_related("asignacion__curso")
+                .first()
+            )
+            if ocupado:
+                raise ValidationError(f"Ese horario ya está ocupado: {ocupado}.")

@@ -15,7 +15,7 @@ from apps.institucion.models import Institucion, Turno
 from apps.reportes import agregados
 from apps.reportes.exportar import excel_dashboard
 
-from ..mixins import PanelMixin
+from ..mixins import PanelMixin, primera_pagina
 from .carnets import weasyprint_disponible
 
 RECORDATORIO_CADA = timedelta(minutes=15)
@@ -60,6 +60,15 @@ class DashboardView(PanelMixin, View):
 
     menu = "dashboard"
     permiso = "panel.dashboard"
+
+    def dispatch(self, request, *args, **kwargs):
+        # Es la portada del panel: quien no ve la asistencia va a la primera sección que sí puede ver
+        u = request.user
+        if u.is_authenticated and u.acceso_panel and not u.puede(self.permiso) and not u.debe_cambiar_password:
+            destino = primera_pagina(u)
+            if destino and destino != "panel:dashboard":
+                return redirect(destino)
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request):
         fecha = leer_fecha(request.GET.get("fecha"))

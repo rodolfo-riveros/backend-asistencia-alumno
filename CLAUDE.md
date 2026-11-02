@@ -30,7 +30,8 @@ python manage.py cerrar_dia [--fecha AAAA-MM-DD]
 - `apps/asistencia` — `reglas.py` (puras), `servicios.py` (aplicar_marca, escanear, justificar, cerrar_dia)
 - `apps/reportes/servicios.py` (app móvil) y `agregados.py` (dashboard y reportes) — un solo cálculo para pantalla y exportes; `exportar.py` = Excel con colores
 - `apps/panel` — panel web /panel/ (Django + HTMX + Alpine). Cada vista declara `permiso = "panel.x"`;
-  el menú (`mixins.MENU`) se filtra por permisos. `importacion.py` = Excel/SIAGIE. Plantillas en `templates/panel/`
+  el menú (`mixins.MENU_GRUPOS`, agrupado; `MENU` es la lista plana) se filtra por permisos. Año nuevo:
+  `institucion/servicios.crear_anio`; paso de año: `estudiantes/promocion.py` (vista `views/anio.py`). `importacion.py` = Excel/SIAGIE. Plantillas en `templates/panel/`
 - `static/panel/` — tokens.css (colores del diseño), panel.css, fuentes y htmx/alpine locales (sin CDN)
 
 ## Convenciones

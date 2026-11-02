@@ -4,41 +4,51 @@
 {% block contenido %}
 <header class="encabezado">
   <div class="encabezado-texto">
-    <span class="contexto">Año escolar {{ anio.anio|default:"—" }} · {{ total }} secciones</span>
+    <span class="contexto">Organización del año · {{ total }} secciones{% if sin_tutor %} · <strong class="bajo">{{ sin_tutor }} sin tutor</strong>{% endif %}</span>
     <h1 class="titulo">Grados y secciones</h1>
   </div>
-  <div class="acciones"><a class="btn primario" href="{% url 'panel:seccion_nueva' %}">{% icono "mas" 16 %}Nueva sección</a></div>
+  <div class="acciones">
+    <form method="get" class="inline">
+      <label class="filtro-etiqueta"><span>Año</span>
+        <select name="anio" onchange="this.form.submit()" aria-label="Año escolar">
+          {% for a in anios %}<option value="{{ a.pk }}" {% if a.pk == anio.pk %}selected{% endif %}>{{ a.anio }}{% if a.activo %} (activo){% endif %}</option>{% endfor %}
+        </select>
+      </label>
+    </form>
+    <a class="btn" href="{% url 'panel:niveles' %}">{% icono "mas" 16 %}Grados y niveles</a>
+    <a class="btn primario" href="{% url 'panel:seccion_nueva' %}?anio={{ anio.pk }}">{% icono "mas" 16 %}Nueva sección</a>
+  </div>
 </header>
 
-<div class="tarjeta tabla-tarjeta">
-  {% if grados %}
-  <div class="tabla-scroll">
-    <table class="tabla">
-      <thead><tr><th>Sección</th><th>Turno</th><th>Tutor(a)</th><th>Aula</th><th>Matriculados</th><th class="derecha">Acciones</th></tr></thead>
-      <tbody>
-      {% for grado, secciones in grados.items %}
-        {% for s in secciones %}
-        <tr>
-          <td><span class="persona"><span class="badge-seccion">{{ s.grado.corto }} {{ s.letra }}</span><span><strong>{{ s.nombre_largo }}</strong><span class="sub">{{ s.grado.nivel }}</span></span></span></td>
-          <td>{{ s.turno }}</td>
-          <td>{% if s.tutor %}<a href="{% url 'panel:docente' s.tutor.pk %}">{{ s.tutor.nombre_completo }}</a>{% else %}<span class="chip error">Sin tutor</span>{% endif %}</td>
-          <td>{{ s.aula|default:"—" }}</td>
-          <td>
-            <a href="{% url 'panel:estudiantes' %}?seccion={{ s.pk }}">{{ s.matriculados }} / {{ s.capacidad }}</a>
-            {% if s.matriculados > s.capacidad %}<span class="chip aviso">Sobre capacidad</span>{% endif %}
-          </td>
-          <td class="derecha">
-            <a class="btn chico" href="{% url 'panel:horario' s.pk %}">Horario</a>
-            <a class="btn chico" href="{% url 'panel:seccion_editar' s.pk %}">Editar</a>
-          </td>
-        </tr>
-        {% endfor %}
-      {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% else %}
-  <div class="vacio">Aún no hay secciones en el año activo. <a href="{% url 'panel:seccion_nueva' %}">Crea la primera</a>.</div>
-  {% endif %}
+{% if anio and not anio.activo %}
+<div class="aviso-paso"><div><strong>Estás viendo {{ anio.anio }}, que aún no es el año activo.</strong><span class="sub">Puedes preparar sus secciones con calma; la app sigue usando {{ anio_activo.anio|default:"el año activo" }}.</span></div></div>
+{% endif %}
+
+<div class="grados">
+  {% for grado, secciones in grados %}
+  <section class="tarjeta grado">
+    <div class="tarjeta-cab">
+      <h2>{{ grado.nombre }} <span class="nota" style="font-weight:600">· {{ grado.nivel }}</span></h2>
+      <a class="btn chico" href="{% url 'panel:seccion_nueva' %}?anio={{ anio.pk }}&grado={{ grado.pk }}">{% icono "mas" 14 %}Sección</a>
+    </div>
+    {% for s in secciones %}
+    <div class="seccion-fila">
+      <span class="badge-seccion">{{ s.grado.corto }} {{ s.letra }}</span>
+      <span class="seccion-datos">
+        <span>{% if s.tutor %}<a href="{% url 'panel:docente' s.tutor.pk %}">{{ s.tutor.nombre_completo }}</a>{% else %}<span class="chip error">Sin tutor</span>{% endif %}</span>
+        <span class="sub">{{ s.turno }}{% if s.aula %} · {{ s.aula }}{% endif %} · <a href="{% url 'panel:estudiantes' %}?seccion={{ s.pk }}">{{ s.matriculados }}/{{ s.capacidad }} estudiantes</a>{% if s.matriculados > s.capacidad %} <span class="chip aviso">Sobre capacidad</span>{% endif %}</span>
+      </span>
+      <span class="acciones">
+        <a class="btn chico" href="{% url 'panel:horario' s.pk %}">Horario</a>
+        <a class="btn chico" href="{% url 'panel:seccion_editar' s.pk %}">Editar</a>
+      </span>
+    </div>
+    {% empty %}
+    <p class="nota" style="margin:0">Sin secciones en {{ anio.anio }}.</p>
+    {% endfor %}
+  </section>
+  {% empty %}
+  <div class="tarjeta"><div class="vacio">No hay grados. <a href="{% url 'panel:niveles' %}">Crea los grados</a> primero.</div></div>
+  {% endfor %}
 </div>
 {% endblock %}

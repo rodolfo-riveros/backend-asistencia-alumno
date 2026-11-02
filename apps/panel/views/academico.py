@@ -1,18 +1,20 @@
-from datetime import time
+from datetime import date, datetime, time, timedelta
 
 from django.contrib import messages
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.db.models import Count, ProtectedError, Q
 from django.shortcuts import get_object_or_404, redirect
 from django.views import View
 
-from apps.academico.models import Asignacion, BloqueHorario, Curso, Seccion
+from apps.academico.models import Asignacion, BloqueHorario, Curso, Grado, Seccion
+from apps.academico.servicios import tutor_dicta_todo
 from apps.estudiantes.models import Matricula
-from apps.institucion.models import AnioEscolar
+from apps.institucion.models import AnioEscolar, Turno
 
 from ..forms import (
     DIAS_SEMANA, AsignacionForm, BloqueForm, CursoForm, DocenteForm, SeccionForm, TutoriaForm,
-    generar_password_temporal,
+    poner_clave_inicial,
 )
 from ..forms import docentes as lista_docentes
 from ..mixins import PanelMixin
@@ -21,26 +23,38 @@ from ..mixins import PanelMixin
 def anio_activo_o_aviso(request):
     anio = AnioEscolar.activo_actual()
     if anio is None:
-        messages.warning(request, "No hay un año escolar activo. Créalo en Configuración.")
+        messages.warning(request, "No hay un año escolar activo. Créalo en Año escolar.")
     return anio
 
 
 # ------------------------------------------------------------------ secciones
+def anio_elegido(request):
+    """Año que se está viendo: el de ?anio= o el activo. Permite preparar el año siguiente."""
+    elegido = AnioEscolar.objects.filter(pk=request.GET.get("anio") or request.POST.get("anio")).first()
+    return elegido or anio_activo_o_aviso(request)
+
+
 class SeccionesView(PanelMixin, View):
     menu = "secciones"
     permiso = "panel.secciones"
 
     def get(self, request):
-        anio = anio_activo_o_aviso(request)
+        anio = anio_elegido(request)
         secciones = (
             Seccion.objects.filter(anio_escolar=anio)
             .select_related("grado__nivel", "turno", "tutor")
             .annotate(matriculados=Count("matriculas", filter=Q(matriculas__estado=Matricula.Estado.ACTIVA)))
+            .order_by("letra")
         )
-        grados = {}
-        for s in secciones:
-            grados.setdefault(s.grado, []).append(s)
-        return self.render("panel/academico/secciones.html", {"grados": grados, "anio": anio, "total": len(secciones)})
+        por_grado = {}
+        for sec in secciones:
+            por_grado.setdefault(sec.grado_id, []).append(sec)
+        grados = [(g, por_grado.get(g.pk, [])) for g in Grado.objects.filter(nivel__activo=True).select_related("nivel")]
+        return self.render("panel/academico/secciones.html", {
+            "grados": grados, "anio": anio, "total": len(secciones),
+            "anios": AnioEscolar.objects.order_by("-anio"),
+            "sin_tutor": sum(1 for sec in secciones if not sec.tutor_id),
+        })
 
 
 class SeccionFormView(PanelMixin, View):
@@ -49,22 +63,41 @@ class SeccionFormView(PanelMixin, View):
 
     def get(self, request, pk=None):
         seccion = get_object_or_404(Seccion, pk=pk) if pk else None
-        return self._pagina(SeccionForm(instance=seccion, anio=self._anio(seccion)), seccion)
+        anio = self._anio(request, seccion)
+        inicial = {}
+        if not seccion:
+            grado = Grado.objects.filter(pk=request.GET.get("grado")).first()
+            if grado:
+                usadas = set(Seccion.objects.filter(anio_escolar=anio, grado=grado).values_list("letra", flat=True))
+                letra = next((c for c in "ABCDEFGHIJ" if c not in usadas), "")
+                inicial = {"grado": grado.pk, "letra": letra, "turno": Turno.objects.order_by("hora_ingreso").first()}
+        return self._pagina(SeccionForm(instance=seccion, anio=anio, initial=inicial), seccion, anio)
 
     def post(self, request, pk=None):
         seccion = get_object_or_404(Seccion, pk=pk) if pk else None
-        form = SeccionForm(request.POST, instance=seccion, anio=self._anio(seccion))
+        anterior = seccion.tutor if seccion else None
+        anio = self._anio(request, seccion)
+        form = SeccionForm(request.POST, instance=seccion, anio=anio)
         if not form.is_valid():
-            return self._pagina(form, seccion)
-        s = form.save()
-        messages.success(request, f"Sección {s.nombre_corto} guardada.")
-        return redirect("panel:secciones")
+            return self._pagina(form, seccion, anio)
+        sec = form.save()
+        extra = ""
+        if sec.tutor and form.cleaned_data.get("tutor_dicta_todo"):
+            r = tutor_dicta_todo(sec, anterior)
+            if r["nuevos"] or r["pasados"]:
+                extra = f" {sec.tutor.nombre_corto} dicta {r['nuevos'] + r['pasados']} curso(s) más."
+        messages.success(request, f"Sección {sec.nombre_corto} de {anio.anio} guardada.{extra}")
+        if request.POST.get("otra"):
+            return redirect(f"/panel/secciones/nueva/?anio={anio.pk}&grado={sec.grado_id}")
+        return redirect(f"/panel/secciones/?anio={anio.pk}")
 
-    def _anio(self, seccion):
-        return seccion.anio_escolar if seccion else AnioEscolar.activo_actual()
+    def _anio(self, request, seccion):
+        if seccion:
+            return seccion.anio_escolar
+        return AnioEscolar.objects.filter(pk=request.GET.get("anio") or request.POST.get("anio")).first() or AnioEscolar.activo_actual()
 
-    def _pagina(self, form, seccion):
-        return self.render("panel/academico/seccion_form.html", {"form": form, "seccion": seccion})
+    def _pagina(self, form, seccion, anio):
+        return self.render("panel/academico/seccion_form.html", {"form": form, "seccion": seccion, "anio": anio})
 
 
 class SeccionEliminarView(PanelMixin, View):
@@ -121,18 +154,26 @@ class HorarioView(PanelMixin, View):
         return self._pagina(seccion, BloqueForm(seccion=seccion))
 
     def post(self, request, pk):
-        seccion = get_object_or_404(Seccion, pk=pk)
+        seccion = get_object_or_404(Seccion.objects.select_related("grado", "turno", "tutor"), pk=pk)
         form = BloqueForm(request.POST, seccion=seccion)
         if form.is_valid():
-            bloque = form.save(commit=False)
-            bloque.seccion = seccion
+            d = form.cleaned_data
             try:
-                bloque.full_clean()
+                with transaction.atomic():
+                    asig, _ = Asignacion.objects.get_or_create(seccion=seccion, curso=d["curso"], defaults={"docente": d["docente"]})
+                    if asig.docente_id != d["docente"].pk:
+                        asig.docente = d["docente"]  # el curso pasa a otro docente (también sus otros bloques)
+                        asig.save(update_fields=["docente", "actualizado_en"])
+                    for dia in d["dias"]:
+                        bloque = BloqueHorario(seccion=seccion, asignacion=asig, dia_semana=dia,
+                                               hora_inicio=d["hora_inicio"], hora_fin=d["hora_fin"])
+                        bloque.full_clean()
+                        bloque.save()
             except ValidationError as e:
                 form.add_error(None, e)
             else:
-                bloque.save()
-                messages.success(request, "Bloque agregado al horario.")
+                n = len(d["dias"])
+                messages.success(request, f"{d['curso']} agregado en {n} día{'s' if n > 1 else ''}.")
                 return redirect("panel:horario", pk=seccion.pk)
         return self._pagina(seccion, form)
 
@@ -149,11 +190,14 @@ class HorarioView(PanelMixin, View):
             ]
             filas.append({"inicio": inicio, "fin": fin, "celdas": celdas})
         if not form.is_bound:
-            form.initial.setdefault("hora_inicio", time(8, 0))
-            form.initial.setdefault("hora_fin", time(8, 45))
+            # Sugerir el bloque siguiente al último registrado
+            ultimo = max((b.hora_fin for b in bloques), default=None)
+            inicio = ultimo or time(8, 0)
+            fin = (datetime.combine(date.today(), inicio) + timedelta(minutes=45)).time()
+            form.initial.update({"hora_inicio": inicio, "hora_fin": fin, "dias": [n for n, _ in DIAS_SEMANA]})
         return self.render("panel/academico/horario.html", {
             "seccion": seccion, "form": form, "filas": filas, "dias": DIAS_SEMANA,
-            "sin_asignaciones": not Asignacion.objects.filter(seccion=seccion).exists(),
+            "asignaciones": Asignacion.objects.filter(seccion=seccion).select_related("curso", "docente").order_by("curso__nombre"),
         })
 
 
@@ -191,15 +235,13 @@ class DocentesView(PanelMixin, View):
         return self.render("panel/academico/docentes.html", {"filas": filas, "form": DocenteForm(initial={"is_active": True, "rol": "DOCENTE"})})
 
     def post(self, request):
-        """Crear docente: genera usuario con contraseña temporal."""
+        """Crear docente: su contraseña es su DNI."""
         form = DocenteForm(request.POST)
         if not form.is_valid():
             messages.error(request, "Revisa los datos del docente.")
             return self.render("panel/academico/docente_nuevo.html", {"form": form})
         docente = form.save(commit=False)
-        clave = generar_password_temporal()
-        docente.set_password(clave)
-        docente.debe_cambiar_password = True
+        clave = poner_clave_inicial(docente)
         docente.save()
         _mensaje_clave(request, docente, clave)
         return redirect("panel:docente", pk=docente.pk)
@@ -259,18 +301,23 @@ class DocenteView(PanelMixin, View):
                 s.tutor = docente
                 s.save(update_fields=["tutor", "actualizado_en"])
                 extra = f" (antes: {anterior.nombre_completo})" if anterior and anterior != docente else ""
+                if tut_form.cleaned_data["todos_cursos"]:
+                    tutor_dicta_todo(s, anterior)
+                    extra += " Dicta todos sus cursos."
                 messages.success(request, f"{docente.nombre_corto} es tutor(a) de {s.nombre_corto}{extra}.")
                 return redirect("panel:docente", pk=pk)
+        elif accion == "cursos_tutoria":
+            s = get_object_or_404(Seccion, pk=request.POST.get("seccion_id"), tutor=docente)
+            r = tutor_dicta_todo(s)
+            messages.success(request, f"{docente.nombre_corto} dicta {r['nuevos']} curso(s) más en {s.nombre_corto}."
+                             if r["nuevos"] else f"Todos los cursos de {s.nombre_corto} ya tienen docente.")
+            return redirect("panel:docente", pk=pk)
         elif accion == "quitar_tutoria":
             Seccion.objects.filter(pk=request.POST.get("seccion_id"), tutor=docente).update(tutor=None)
             messages.success(request, "Tutoría quitada.")
             return redirect("panel:docente", pk=pk)
         elif accion == "restablecer":
-            clave = generar_password_temporal()
-            docente.set_password(clave)
-            docente.debe_cambiar_password = True
-            docente.intentos_fallidos = 0
-            docente.bloqueado_hasta = None
+            clave = poner_clave_inicial(docente)
             docente.save()
             _mensaje_clave(request, docente, clave)
             return redirect("panel:docente", pk=pk)
@@ -290,6 +337,9 @@ class DocenteView(PanelMixin, View):
 
 
 def _mensaje_clave(request, usuario, clave):
+    if clave is None:
+        messages.success(request, f"Listo: {usuario.nombre_corto} entra con su correo {usuario.email} y su DNI como contraseña.")
+        return
     messages.success(
         request,
         f"Contraseña temporal de {usuario.email}: {clave} — entrégala al usuario; deberá cambiarla al ingresar. "

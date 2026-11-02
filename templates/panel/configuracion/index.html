@@ -4,11 +4,10 @@
 {% block contenido %}
 <header class="encabezado">
   <div class="encabezado-texto">
-    <span class="contexto">Institución, logo, reglas, turnos, años escolares, niveles y grados</span>
-    <h1 class="titulo">Configuración</h1>
+    <span class="contexto">Datos de la institución, logo, reglas de asistencia y turnos</span>
+    <h1 class="titulo">Institución y reglas</h1>
   </div>
   <div class="acciones">
-    <a class="btn" href="{% url 'panel:niveles' %}">{% icono "secciones" 16 %}Niveles y grados</a>
     {% if "panel.calendario" in permisos %}<a class="btn" href="{% url 'panel:calendario' %}">{% icono "calendario" 16 %}Calendario</a>{% endif %}
     {% if "panel.usuarios" in permisos %}<a class="btn" href="{% url 'panel:usuarios' %}">{% icono "usuarios" 16 %}Usuarios y roles</a>{% endif %}
   </div>
@@ -55,33 +54,9 @@
   {% endfor %}
 </div>
 
-<div class="rejilla">
-  <div class="tarjeta tabla-tarjeta">
-    <div class="tarjeta-cab"><h2>Años escolares</h2></div>
-    <table class="tabla">
-      <thead><tr><th>Año</th><th>Inicio</th><th>Fin</th><th>Estado</th></tr></thead>
-      <tbody>
-      {% for a in anios %}
-        <tr>
-          <td><strong>{{ a.anio }}</strong></td><td>{{ a.fecha_inicio|date:"d/m/Y" }}</td><td>{{ a.fecha_fin|date:"d/m/Y" }}</td>
-          <td>{% if a.activo %}<span class="chip ok">Activo</span>{% else %}
-            <form method="post" class="inline" onsubmit="return confirm('¿Activar {{ a.anio }}? El panel y la app pasarán a usar este año.')">{% csrf_token %}<input type="hidden" name="accion" value="activar_anio"><input type="hidden" name="anio_id" value="{{ a.pk }}"><button class="btn chico" type="submit">Activar</button></form>
-          {% endif %}</td>
-        </tr>
-      {% empty %}
-        <tr><td colspan="4" class="vacio">No hay años escolares.</td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  <div class="tarjeta">
-    <div class="tarjeta-cab"><h2>Nuevo año escolar</h2></div>
-    <form method="post" class="formulario" novalidate>
-      {% csrf_token %}<input type="hidden" name="accion" value="anio">
-      {% with form=anio_form %}{% include "panel/parciales/form_generico.html" %}{% endwith %}
-      <div class="botones-form"><button class="btn primario" type="submit">Crear año</button></div>
-    </form>
-  </div>
+<div class="tarjeta">
+  <div class="tarjeta-cab"><h2>Año escolar</h2></div>
+  <p class="nota" style="margin:0">Los años escolares, su activación y el paso de los estudiantes al año siguiente están en <a href="{% url 'panel:anio' %}">Organización del año → Año escolar</a>.</p>
 </div>
 </div>
 {% endblock %}

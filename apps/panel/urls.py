@@ -1,6 +1,9 @@
 from django.urls import path
+from django.views.generic import RedirectView
 
-from .views import academico, base, carnets, configuracion, dashboard, estudiantes, importar, reportes, usuarios
+from .views import (
+    academico, anio, base, carnets, configuracion, dashboard, estudiantes, importar, reportes, usuarios,
+)
 
 app_name = "panel"
 
@@ -8,7 +11,12 @@ urlpatterns = [
     path("login/", base.LoginView.as_view(), name="login"),
     path("salir/", base.LogoutView.as_view(), name="logout"),
     path("cambiar-contrasena/", base.CambiarPasswordView.as_view(), name="cambiar_password"),
-    path("", dashboard.DashboardView.as_view(), name="inicio"),
+    path("", dashboard.DashboardView.as_view(), name="dashboard"),
+    path("asistencia/", RedirectView.as_view(url="/panel/", query_string=True)),
+    # Año escolar y paso de año
+    path("anio/", anio.AnioEscolarView.as_view(), name="anio"),
+    path("anio/promocion/", anio.PromocionView.as_view(), name="promocion"),
+    path("anio/promocion/<int:pk>/", anio.PromocionSeccionView.as_view(), name="promocion_seccion"),
     path("recordar/", dashboard.RecordarDocentesView.as_view(), name="recordar"),
     path("reportes/", reportes.ReportesView.as_view(), name="reportes"),
     # Estudiantes
@@ -38,7 +46,7 @@ urlpatterns = [
     # Configuración
     path("configuracion/", configuracion.ConfiguracionView.as_view(), name="configuracion"),
     path("configuracion/calendario/", configuracion.CalendarioView.as_view(), name="calendario"),
-    path("configuracion/niveles/", configuracion.NivelesView.as_view(), name="niveles"),
+    path("secciones/grados/", configuracion.NivelesView.as_view(), name="niveles"),
     # Usuarios, roles y permisos
     path("usuarios/", usuarios.UsuariosView.as_view(), name="usuarios"),
     path("usuarios/nuevo/", usuarios.UsuarioFormView.as_view(), name="usuario_nuevo"),

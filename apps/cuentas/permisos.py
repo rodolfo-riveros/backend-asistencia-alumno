@@ -6,7 +6,8 @@ El código nunca pregunta por el nombre del rol: pregunta `usuario.puede("permis
 
 # (código, grupo, nombre, descripción)
 PERMISOS = [
-    ("panel.dashboard", "Panel web", "Dashboard del día", "Ver la asistencia del día y enviar recordatorios."),
+    ("panel.anio_escolar", "Panel web", "Año escolar", "Crear y activar años escolares y pasar a los estudiantes de año."),
+    ("panel.dashboard", "Panel web", "Asistencia del día", "Ver la asistencia del día y enviar recordatorios."),
     ("panel.reportes", "Panel web", "Reportes", "Reportes diarios y mensuales, % por estudiante, alertas y exportes."),
     ("panel.estudiantes", "Panel web", "Estudiantes", "Fichas, apoderados, matrículas y carnet de cada estudiante."),
     ("panel.secciones", "Panel web", "Grados y secciones", "Crear y editar secciones y tutores."),

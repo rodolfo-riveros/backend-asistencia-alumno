@@ -8,7 +8,7 @@ from django.views import View
 from apps.cuentas.models import Rol, Usuario
 from apps.cuentas.permisos import CODIGOS, ROL_ADMIN, agrupados
 
-from ..forms import RolForm, UsuarioForm, generar_password_temporal
+from ..forms import RolForm, UsuarioForm, poner_clave_inicial
 from ..mixins import PanelMixin
 from .academico import _mensaje_clave
 
@@ -65,10 +65,7 @@ class UsuariosView(PanelMixin, View):
 
 
 def _restablecer(request, u):
-    clave = generar_password_temporal()
-    u.set_password(clave)
-    u.debe_cambiar_password = True
-    u.intentos_fallidos, u.bloqueado_hasta = 0, None
+    clave = poner_clave_inicial(u)
     u.save()
     _mensaje_clave(request, u, clave)
 
@@ -95,9 +92,7 @@ class UsuarioFormView(PanelMixin, View):
         nuevo = form.save(commit=False)
         nuevo.is_staff = nuevo.rol_id == ROL_ADMIN
         if not u:
-            clave = generar_password_temporal()
-            nuevo.set_password(clave)
-            nuevo.debe_cambiar_password = True
+            clave = poner_clave_inicial(nuevo)
             nuevo.save()
             _mensaje_clave(request, nuevo, clave)
         else:

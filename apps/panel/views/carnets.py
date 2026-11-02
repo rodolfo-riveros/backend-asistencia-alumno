@@ -134,14 +134,14 @@ class HojaCarnetsView(PanelMixin, View):
         inst = Institucion.obtener()
         ctx = {
             "hojas": hojas, "titulo": titulo, "sin_carnet": sin_carnet, "institucion": inst,
-            "anio": anio, "logo": logo_data_uri(inst) if request.GET.get("logo") == "1" else None,
+            "anio": anio, "logo": logo_data_uri(inst),
             "pdf_disponible": weasyprint_disponible(), "query": request.GET.urlencode(),
             "volver_url": volver,
         }
         if request.GET.get("formato") == "pdf":
             if not weasyprint_disponible():
                 messages.warning(request, "El PDF directo necesita WeasyPrint (servidor Linux). Usa «Imprimir → Guardar como PDF».")
-                return redirect(request.path + (f"?logo={request.GET['logo']}" if request.GET.get("logo") else ""))
+                return redirect(request.path)
             from weasyprint import HTML
 
             html = render_to_string("panel/carnets/hoja.html", {**ctx, "modo_pdf": True}, request=request)

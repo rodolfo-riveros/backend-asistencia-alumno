@@ -1,0 +1,65 @@
+{% extends "panel/base.html" %}
+{% load panel %}
+{% block titulo %}Pasar de año · {{ origen_seccion.nombre_corto }}{% endblock %}
+{% block contenido %}
+<header class="encabezado">
+  <div class="encabezado-texto">
+    <span class="contexto"><a href="{% url 'panel:anio' %}">Año escolar</a> · <a href="{% url 'panel:promocion' %}?origen={{ origen_seccion.anio_escolar_id }}&destino={{ destino.pk }}">Pasar de año</a></span>
+    <h1 class="titulo">{{ origen_seccion.nombre_largo }} · {{ origen_seccion.anio_escolar.anio }} → {{ destino.anio }}</h1>
+  </div>
+</header>
+
+<p class="nota" style="margin:0">
+  {% if egresa %}Es el último grado: por defecto <strong>egresan</strong> (no se matriculan). Si alguien repite, elige su sección.
+  {% else %}Todos pasan a <strong>{{ sugerida.nombre_corto|default:"—" }}</strong>. Cambia solo a quien repite o no continúa, y guarda.{% endif %}
+</p>
+
+<form method="post" x-data>
+  {% csrf_token %}
+  <div class="tarjeta tabla-tarjeta">
+    <div class="tarjeta-cab">
+      <h2>{{ filas|length }} estudiante{{ filas|length|pluralize }}</h2>
+      <span class="acciones">
+        <label class="filtro-etiqueta"><span>Para todos</span>
+          <select aria-label="Aplicar a todos" @change="if ($event.target.value) { $root.querySelectorAll('select.destino').forEach(s => s.value = $event.target.value); $event.target.value = '' }">
+            <option value="">Elegir…</option>
+            {% for titulo, secciones in grupos %}<optgroup label="{{ titulo }}">{% for s in secciones %}<option value="{{ s.pk }}">{{ s.nombre_corto }}</option>{% endfor %}</optgroup>{% endfor %}
+            <option value="{{ no_matricular }}">No se matricula</option>
+          </select>
+        </label>
+      </span>
+    </div>
+    <div class="tabla-scroll">
+      <table class="tabla">
+        <thead><tr><th>Estudiante</th><th>En {{ destino.anio }}</th><th>Estado</th></tr></thead>
+        <tbody>
+        {% for f in filas %}
+          <tr>
+            <td><span class="persona"><span class="avatar">{{ f.matricula.estudiante.iniciales }}</span><span><strong>{{ f.matricula.estudiante.apellidos }}</strong><span class="sub">{{ f.matricula.estudiante.nombres }}</span></span></span></td>
+            <td style="min-width:240px">
+              <select class="destino input chico" name="m_{{ f.matricula.pk }}" aria-label="Destino de {{ f.matricula.estudiante.nombre_completo }}">
+                {% for titulo, secciones in grupos %}
+                <optgroup label="{{ titulo }}">
+                  {% for s in secciones %}<option value="{{ s.pk }}" {% if f.valor_inicial == s.pk|stringformat:'s' %}selected{% endif %}>{{ s.nombre_corto }}{% if titulo == "Repite el grado" %} (repite){% endif %}</option>{% endfor %}
+                </optgroup>
+                {% endfor %}
+                <option value="{{ no_matricular }}" {% if f.valor_inicial == no_matricular %}selected{% endif %}>No se matricula (egresa / se retira)</option>
+              </select>
+            </td>
+            <td>{% if f.destino_actual %}<span class="chip ok">Ya matriculado en {{ f.destino_actual.seccion.nombre_corto }}</span>{% else %}<span class="chip">Pendiente</span>{% endif %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="3" class="vacio">Este salón no tiene estudiantes activos.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% if filas %}
+  <div class="botones-form" style="margin-top:12px">
+    <a class="btn" href="{% url 'panel:promocion' %}?origen={{ origen_seccion.anio_escolar_id }}&destino={{ destino.pk }}">Volver</a>
+    <button class="btn primario grande" type="submit">Guardar paso de año</button>
+  </div>
+  {% endif %}
+</form>
+{% endblock %}

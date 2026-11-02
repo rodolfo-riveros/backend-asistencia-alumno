@@ -25,7 +25,7 @@
 </header>
 
 <div id="dashboard"
-     {% if es_hoy %}hx-get="{% url 'panel:inicio' %}?{{ query }}" hx-trigger="every 60s" hx-swap="innerHTML"{% endif %}>
+     {% if es_hoy %}hx-get="{% url 'panel:dashboard' %}?{{ query }}" hx-trigger="every 60s" hx-swap="innerHTML"{% endif %}>
   {% include "panel/dashboard/_contenido.html" %}
 </div>
 {% endblock %}

@@ -6,7 +6,7 @@
   <title>{% block titulo %}Panel{% endblock %} · Asistencia</title>
   <link rel="preload" href="{% static 'panel/fonts/Figtree.woff2' %}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{% static 'panel/css/tokens.css' %}">
-  <link rel="stylesheet" href="{% static 'panel/css/panel.css' %}?v=8">
+  <link rel="stylesheet" href="{% static 'panel/css/panel.css' %}?v=9">
   <script src="{% static 'panel/js/htmx.min.js' %}" defer></script>
   <script src="{% static 'panel/js/alpine.min.js' %}" defer></script>
   {% block cabeza %}{% endblock %}
@@ -24,9 +24,17 @@
         <span class="marca-sub">{{ institucion.nombre_visible }}</span>
       </span>
     </a>
+    {% if "panel.anio_escolar" in permisos %}<a class="anio-activo{% if not anio_activo %} sin-anio{% endif %}" href="{% url 'panel:anio' %}" title="Cambiar o crear año escolar">
+    {% else %}<span class="anio-activo{% if not anio_activo %} sin-anio{% endif %}">{% endif %}
+      {% icono "anio" 16 %}
+      <span>{% if anio_activo %}Año escolar <strong>{{ anio_activo.anio }}</strong>{% else %}<strong>Sin año escolar activo</strong>{% endif %}</span>
+    {% if "panel.anio_escolar" in permisos %}</a>{% else %}</span>{% endif %}
     <nav class="menu" aria-label="Principal">
-      {% for clave, permiso, url, texto, icono_menu in menu_items %}
-      <a href="{% url url %}" {% if menu == clave %}aria-current="page"{% endif %}>{% icono icono_menu %}{{ texto }}</a>
+      {% for titulo, opciones in menu_grupos %}
+        {% if titulo %}<span class="menu-grupo">{{ titulo }}</span>{% endif %}
+        {% for clave, permiso, url, texto, icono_menu in opciones %}
+        <a href="{% url url %}" {% if menu == clave %}aria-current="page"{% endif %}>{% icono icono_menu %}{{ texto }}</a>
+        {% endfor %}
       {% endfor %}
     </nav>
     <div class="sidebar-pie">

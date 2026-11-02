@@ -26,6 +26,11 @@ h1, h2, h3 { margin: 0; }
 .menu a:hover { background: #1C2B4D; color: #FFFFFF; }
 .menu a[aria-current="page"] { background: var(--ink-hover); color: #FFFFFF; font-weight: 700; }
 .menu svg { flex: none; }
+.menu-grupo { display: block; margin: 14px 12px 4px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #8C97B3; }
+.anio-activo { display: flex; align-items: center; gap: 8px; margin: -8px 8px 0; padding: 8px 12px; border-radius: 10px; background: #1C2B4D; color: var(--sidebar-text); text-decoration: none; font-size: 13px; }
+a.anio-activo:hover { background: var(--ink-hover); color: #FFFFFF; }
+.anio-activo strong { color: #FFFFFF; }
+.anio-activo.sin-anio { background: var(--f-solid); color: #FFFFFF; }
 .menu-sep { height: 1px; background: var(--sidebar-line); margin: 8px 12px; }
 .sidebar-pie { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 12px 8px 0; border-top: 1px solid var(--sidebar-line); }
 .sidebar-pie .avatar { background: var(--bg); color: var(--ink); }
@@ -242,3 +247,51 @@ table.matriz { border-collapse: separate; border-spacing: 3px; font-size: 12px; 
   .contenido { padding: 20px 16px 40px; }
   .rejilla { grid-template-columns: 1fr; }
 }
+
+/* ---------- Inicio, año escolar y paso de año ---------- */
+.pasos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.paso { display: flex; align-items: center; gap: 14px; padding: 12px 4px; border-top: 1px solid var(--row-line); }
+.paso:first-child { border-top: 0; }
+.paso-numero { width: 32px; height: 32px; border-radius: 999px; background: var(--ink); color: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex: none; }
+.paso.hecho .paso-numero { background: var(--p-bg); color: var(--p-fg); }
+.paso.hecho .paso-texto strong { color: var(--text-muted); }
+.paso-texto { flex: 1; display: flex; flex-direction: column; gap: 2px; font-size: 15px; }
+.paso-texto .sub, .aviso-paso .sub { font-size: 13px; color: var(--text-muted); }
+.accesos { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+.acceso { display: flex; align-items: center; gap: 10px; padding: 14px; border: 1px solid var(--border); border-radius: 14px; text-decoration: none; font-weight: 700; font-size: 14px; color: var(--ink); background: var(--surface); }
+.acceso:hover { border-color: var(--ink); background: var(--bg); }
+.aviso-paso { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 14px 18px; border-radius: 16px; background: var(--j-bg); color: var(--j-fg); }
+.aviso-paso > div { display: flex; flex-direction: column; gap: 2px; }
+.anios { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.anio.activo { border: 2px solid var(--p-solid); }
+.anio-numero { font-family: var(--font-title); font-size: 30px !important; letter-spacing: -0.02em; }
+details.tarjeta > summary::-webkit-details-marker { display: none; }
+.guia { list-style: none; margin: 0; padding: 14px 18px; display: flex; flex-direction: column; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; font-size: 14px; }
+.grados { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; align-items: start; }
+.seccion-fila { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--row-line); flex-wrap: wrap; }
+.seccion-datos { flex: 1; min-width: 160px; display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
+.seccion-datos .sub { font-size: 12px; color: var(--text-muted); }
+select.input.chico { padding-right: 28px; }
+
+/* Días del horario como fichas marcables */
+.dias-check { display: flex; flex-wrap: wrap; gap: 8px; }
+.dias-check label { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; font-weight: 600; background: var(--surface); }
+.dias-check label:has(input:checked) { border-color: var(--ink); background: var(--bg); }
+.dias-check input { width: 18px; height: 18px; accent-color: var(--ink); }
+.sugeridos { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border-top: 1px solid var(--row-line); padding-top: 12px; }
+.sugeridos .etiqueta { width: 100%; }
+
+/* Formulario guiado de año nuevo */
+.pasos-form { list-style: none; counter-reset: paso; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.pasos-form > li { counter-increment: paso; position: relative; padding: 14px 0 14px 46px; border-top: 1px solid var(--row-line); display: flex; flex-direction: column; gap: 10px; }
+.pasos-form > li::before { content: counter(paso); position: absolute; left: 0; top: 12px; width: 30px; height: 30px; border-radius: 50%; background: var(--ink); color: #FFFFFF; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.pasos-form h3 { margin: 4px 0 0; font-size: 16px; }
+.pasos-form .nota { margin: 0; }
+.pasos-form .nota svg { vertical-align: -3px; margin-right: 4px; }
+.opciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.opcion { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; cursor: pointer; background: var(--surface); }
+.opcion:has(input:checked) { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); background: var(--bg); }
+.opcion input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--ink); flex: none; }
+.opcion > span { display: flex; flex-direction: column; gap: 4px; }
+.opcion .sub { color: var(--text-muted); font-size: 13px; }
+@media (max-width: 640px) { .pasos-form > li { padding-left: 0; padding-top: 50px; } }

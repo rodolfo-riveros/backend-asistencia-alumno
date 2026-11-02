@@ -39,16 +39,34 @@
   {% endif %}
 </div>
 
+<div class="rejilla">
 <div class="tarjeta">
-  <div class="tarjeta-cab"><h2>Agregar bloque</h2></div>
-  {% if sin_asignaciones %}
-    <p class="nota" style="margin:0">Primero asigna cursos a docentes en <a href="{% url 'panel:docentes' %}">Docentes y asignaciones</a>.</p>
-  {% else %}
+  <div class="tarjeta-cab"><h2>Agregar curso al horario</h2></div>
   <form method="post" class="formulario" novalidate>
     {% csrf_token %}
-    {% include "panel/parciales/form_generico.html" %}
-    <div class="botones-form"><button class="btn primario" type="submit">{% icono "mas" 16 %}Agregar</button></div>
+    {% if form.non_field_errors %}<div class="errores-form ancho">{% for e in form.non_field_errors %}{{ e }}<br>{% endfor %}</div>{% endif %}
+    {% campo form.curso %}{% campo form.docente %}
+    <div class="campo ancho{% if form.dias.errors %} con-error{% endif %}">
+      <span class="label">Días <span style="font-weight:400;color:var(--text-muted)">(marca todos los que se repite a esta hora)</span></span>
+      <div class="dias-check">
+        {% for op in form.dias %}<label>{{ op.tag }}<span>{{ op.choice_label }}</span></label>{% endfor %}
+      </div>
+      {% for e in form.dias.errors %}<span class="error-campo">{{ e }}</span>{% endfor %}
+    </div>
+    {% campo form.hora_inicio %}{% campo form.hora_fin %}
+    <div class="botones-form"><button class="btn primario" type="submit">{% icono "mas" 16 %}Agregar al horario</button></div>
   </form>
-  {% endif %}
+</div>
+
+<div class="tarjeta">
+  <div class="tarjeta-cab"><h2>Quién dicta cada curso</h2><span class="nota">Tutor(a): {{ seccion.tutor.nombre_completo|default:"sin tutor" }}</span></div>
+  <ul class="lista-simple">
+    {% for a in asignaciones %}
+    <li><span><strong>{{ a.curso }}</strong></span><span>{{ a.docente.nombre_completo }}{% if a.docente_id == seccion.tutor_id %} <span class="chip info">Tutor(a)</span>{% endif %}</span></li>
+    {% empty %}
+    <li><span class="nota">Aún no hay cursos. Al agregar uno al horario, lo dicta el tutor(a) salvo que elijas a otro docente.</span></li>
+    {% endfor %}
+  </ul>
+</div>
 </div>
 {% endblock %}

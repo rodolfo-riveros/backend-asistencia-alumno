@@ -2,26 +2,50 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 
-# Menú lateral: (clave, permiso, url, texto, ícono). El orden es el del diseño.
-MENU = [
-    ("dashboard", "panel.dashboard", "panel:inicio", "Dashboard del día", "dashboard"),
-    ("reportes", "panel.reportes", "panel:reportes", "Reportes", "reportes"),
-    ("estudiantes", "panel.estudiantes", "panel:estudiantes", "Estudiantes", "estudiantes"),
-    ("secciones", "panel.secciones", "panel:secciones", "Grados y secciones", "secciones"),
-    ("docentes", "panel.docentes", "panel:docentes", "Docentes y asignaciones", "docentes"),
-    ("cursos", "panel.cursos", "panel:cursos", "Cursos y horarios", "horarios"),
-    ("carnets", "panel.carnets", "panel:carnets", "Carnets QR", "carnets"),
-    ("importar", "panel.importar", "panel:importar", "Importar estudiantes", "importar"),
-    ("calendario", "panel.calendario", "panel:calendario", "Calendario", "calendario"),
-    ("usuarios", "panel.usuarios", "panel:usuarios", "Usuarios y roles", "usuarios"),
-    ("configuracion", "panel.configuracion", "panel:configuracion", "Configuración", "configuracion"),
+# Menú lateral agrupado en el orden de trabajo: primero se organiza el año, luego las
+# personas y recién después se toma y revisa la asistencia.
+# Cada opción: (clave, permiso, url, texto, ícono). permiso None = cualquier usuario del panel.
+MENU_GRUPOS = [
+    ("", [
+        ("dashboard", "panel.dashboard", "panel:dashboard", "Inicio", "dashboard"),
+    ]),
+    ("Organización del año", [
+        ("anio", "panel.anio_escolar", "panel:anio", "Año escolar", "anio"),
+        ("secciones", "panel.secciones", "panel:secciones", "Grados y secciones", "secciones"),
+        ("cursos", "panel.cursos", "panel:cursos", "Cursos y horarios", "horarios"),
+        ("calendario", "panel.calendario", "panel:calendario", "Calendario", "calendario"),
+    ]),
+    ("Personas", [
+        ("docentes", "panel.docentes", "panel:docentes", "Docentes", "docentes"),
+        ("estudiantes", "panel.estudiantes", "panel:estudiantes", "Estudiantes", "estudiantes"),
+        ("importar", "panel.importar", "panel:importar", "Importar estudiantes", "importar"),
+        ("carnets", "panel.carnets", "panel:carnets", "Carnets QR", "carnets"),
+    ]),
+    ("Asistencia", [
+        ("reportes", "panel.reportes", "panel:reportes", "Reportes", "reportes"),
+    ]),
+    ("Sistema", [
+        ("usuarios", "panel.usuarios", "panel:usuarios", "Usuarios y roles", "usuarios"),
+        ("configuracion", "panel.configuracion", "panel:configuracion", "Institución y reglas", "configuracion"),
+    ]),
 ]
+MENU = [opcion for _, opciones in MENU_GRUPOS for opcion in opciones]
+
+
+def menu_de(usuario) -> list[tuple[str, list]]:
+    """Grupos del menú con solo las opciones que el usuario puede ver."""
+    salida = []
+    for titulo, opciones in MENU_GRUPOS:
+        visibles = [o for o in opciones if o[1] is None or usuario.puede(o[1])]
+        if visibles:
+            salida.append((titulo, visibles))
+    return salida
 
 
 def primera_pagina(usuario) -> str | None:
     """URL de la primera sección del panel que el usuario puede ver."""
     for _, permiso, url, _, _ in MENU:
-        if usuario.puede(permiso):
+        if permiso is None or usuario.puede(permiso):
             return url
     return None
 

@@ -57,7 +57,8 @@ def test_crear_rol_y_usuario_desde_el_panel(admin, escuela):
     html = s.get("/panel/estudiantes/").content.decode()
     assert "Carnets QR" in html and "Reportes" not in html and "Dashboard del día" not in html
     assert s.get("/panel/reportes/").status_code == 403
-    assert s.get("/panel/").status_code == 403
+    r = s.get("/panel/")  # sin permiso de asistencia: va a la primera sección que sí puede ver
+    assert r.status_code == 302 and r["Location"] == "/panel/estudiantes/"
 
     # Al dar un permiso al rol, se aplica de inmediato
     c.post(f"/panel/usuarios/roles/{rol.pk}/", {"nombre": "Secretaría", "permisos": ["panel.estudiantes", "panel.reportes"]})
@@ -69,6 +70,8 @@ def test_login_del_panel_lleva_a_la_primera_seccion_permitida(admin):
     crear_usuario("imp@ie.edu.pe", "IMPORTADOR")
     r = Client().post("/panel/login/", {"email": "imp@ie.edu.pe", "password": "clave-segura-123"})
     assert r.status_code == 302 and r["Location"] == "/panel/importar/"
+    inicio = cliente(Usuario.objects.get(email="imp@ie.edu.pe")).get("/panel/", follow=True)
+    assert inicio.redirect_chain[-1][0] == "/panel/importar/" and "Reportes" not in inicio.content.decode()
     assert rol.usuarios.count() == 1
 
 
@@ -146,17 +149,17 @@ def test_rol_con_permiso_docente_aparece_como_tutor(admin, escuela):
 
 def test_niveles_y_grados(admin):
     c = cliente(admin)
-    c.get("/panel/configuracion/niveles/")
+    c.get("/panel/secciones/grados/")
     secundaria = Nivel.objects.get(nombre="SECUNDARIA")
     assert not secundaria.activo
-    c.post("/panel/configuracion/niveles/", {"accion": "nivel", "nivel_id": secundaria.pk, "activo": "1"})
+    c.post("/panel/secciones/grados/", {"accion": "nivel", "nivel_id": secundaria.pk, "activo": "1"})
     secundaria.refresh_from_db()
     assert secundaria.activo
-    c.post("/panel/configuracion/niveles/", {"accion": "crear_grado", "nivel": secundaria.pk, "numero": 1, "nombre": "1.º año", "orden": 7})
+    c.post("/panel/secciones/grados/", {"accion": "crear_grado", "nivel": secundaria.pk, "numero": 1, "nombre": "1.º año", "orden": 7})
     assert Grado.objects.filter(nivel=secundaria, nombre="1.º año").exists()
     # No se puede dejar sin niveles activos
     for n in Nivel.objects.filter(activo=True):
-        c.post("/panel/configuracion/niveles/", {"accion": "nivel", "nivel_id": n.pk, "activo": "0"})
+        c.post("/panel/secciones/grados/", {"accion": "nivel", "nivel_id": n.pk, "activo": "0"})
     assert Nivel.objects.filter(activo=True).count() == 1
 
 

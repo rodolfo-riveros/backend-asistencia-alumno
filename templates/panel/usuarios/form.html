@@ -11,7 +11,7 @@
   <div class="acciones">
     {% if usuario_editado.debe_cambiar_password %}<span class="chip aviso">Debe cambiar su contraseña</span>{% endif %}
     {% if usuario_editado.esta_bloqueado %}<span class="chip error">Bloqueado por intentos fallidos</span>{% endif %}
-    <form method="post" class="inline" onsubmit="return confirm('Se generará una contraseña temporal nueva. ¿Continuar?')">
+    <form method="post" class="inline" onsubmit="return confirm('{% if usuario_editado.dni %}Su contraseña volverá a ser su DNI y se desbloqueará la cuenta.{% else %}Se generará una contraseña temporal nueva.{% endif %} ¿Continuar?')">
       {% csrf_token %}<input type="hidden" name="accion" value="restablecer">
       <button class="btn" type="submit">Restablecer contraseña</button>
     </form>
@@ -22,7 +22,7 @@
 <div class="rejilla">
   <div class="tarjeta">
     <div class="tarjeta-cab"><h2>Datos y rol</h2></div>
-    {% if not usuario_editado %}<p class="nota" style="margin:0">Se creará con una contraseña temporal que verás una sola vez.</p>{% endif %}
+    {% if not usuario_editado %}<p class="nota" style="margin:0">Si pones su DNI, esa será su contraseña. Si no, se genera una temporal que verás una sola vez.</p>{% endif %}
     <form method="post" class="formulario" novalidate>
       {% csrf_token %}
       {% include "panel/parciales/form_generico.html" %}

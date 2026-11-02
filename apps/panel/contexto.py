@@ -1,6 +1,6 @@
 from apps.institucion.models import AnioEscolar, Institucion
 
-from .mixins import MENU
+from .mixins import menu_de
 
 
 def panel(request):
@@ -13,5 +13,6 @@ def panel(request):
         "institucion": Institucion.obtener(),
         "anio_activo": AnioEscolar.activo_actual(),
         "permisos": permisos,
-        "menu_items": [m for m in MENU if m[1] in permisos],
+        "menu_grupos": menu_de(u) if u.is_authenticated else [],
+        "menu_items": [o for _, ops in (menu_de(u) if u.is_authenticated else []) for o in ops],
     }

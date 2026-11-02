@@ -4,37 +4,86 @@
 {% block contenido %}
 <header class="encabezado">
   <div class="encabezado-texto">
-    <span class="contexto"><a href="{% url 'panel:configuracion' %}">Configuración</a> · Año escolar {{ anio.anio }} ({{ anio.fecha_inicio|date:"j M" }} – {{ anio.fecha_fin|date:"j M" }})</span>
-    <h1 class="titulo">Calendario · días no lectivos</h1>
+    <span class="contexto">Organización del año{% if anio %} · Clases del {{ anio.fecha_inicio|date:"j \d\e F" }} al {{ anio.fecha_fin|date:"j \d\e F" }}{% endif %}</span>
+    <h1 class="titulo">Calendario · días sin clases</h1>
+  </div>
+  <div class="acciones">
+    <form method="get" class="inline">
+      <label class="filtro-etiqueta"><span>Año</span>
+        <select name="anio" onchange="this.form.submit()" aria-label="Año escolar">
+          {% for a in anios %}<option value="{{ a.pk }}" {% if a.pk == anio.pk %}selected{% endif %}>{{ a.anio }}{% if a.activo %} (activo){% endif %}</option>{% endfor %}
+        </select>
+      </label>
+    </form>
   </div>
 </header>
 
+{% if not anio %}
+<div class="tarjeta"><div class="vacio">Primero crea el año escolar en <a href="{% url 'panel:anio' %}">Año escolar</a>.</div></div>
+{% else %}
+<p class="nota" style="margin:0">Estos días no cuentan: no se pasa lista ni se marcan faltas. En total, <strong>{{ total }}</strong> día{{ total|pluralize }} de lunes a viernes sin clases en {{ anio.anio }}.</p>
+
 <div class="rejilla">
-  <div class="tarjeta">
-    <div class="tarjeta-cab"><h2>Agregar feriado o vacaciones</h2></div>
-    <p class="nota" style="margin:0">Estos días no cuentan como hábiles: no se pasa lista ni se marcan faltas.</p>
-    <form method="post" class="formulario" novalidate>
-      {% csrf_token %}
-      {% include "panel/parciales/form_generico.html" %}
-      <div class="botones-form"><button class="btn primario" type="submit">Agregar</button></div>
-    </form>
+  <div>
+    <div class="tarjeta">
+      <div class="tarjeta-cab"><h2>Agregar un día propio de la institución</h2></div>
+      <p class="nota" style="margin:0">Aniversario del colegio, feriado de tu región o distrito, vacaciones, o un día no laborable que decrete el Gobierno.</p>
+      <form method="post" class="formulario" novalidate>
+        {% csrf_token %}<input type="hidden" name="anio" value="{{ anio.pk }}">
+        {% if form.non_field_errors %}<div class="errores-form ancho">{% for e in form.non_field_errors %}{{ e }}<br>{% endfor %}</div>{% endif %}
+        <div class="campo ancho">
+          <span class="label">¿Qué es?</span>
+          <div class="dias-check">
+            {% for op in form.motivo %}<label>{{ op.tag }}<span>{{ op.choice_label }}</span></label>{% endfor %}
+          </div>
+        </div>
+        {% campo form.desde %}{% campo form.hasta %}
+        {% campo form.descripcion ancho=True %}
+        <div class="botones-form"><button class="btn primario" type="submit">{% icono "mas" 16 %}Agregar</button></div>
+      </form>
+      {% if sugeridos %}
+      <div class="sugeridos">
+        <span class="etiqueta">Sugerido para colegios</span>
+        {% for f, nombre in sugeridos %}
+        <form method="post" class="inline">
+          {% csrf_token %}<input type="hidden" name="anio" value="{{ anio.pk }}"><input type="hidden" name="accion" value="sugerido">
+          <input type="hidden" name="fecha" value="{{ f|date:'Y-m-d' }}"><input type="hidden" name="descripcion" value="{{ nombre }}">
+          <button class="btn chico" type="submit">{% icono "mas" 14 %}{{ nombre }} · {{ f|date:"D j M" }}</button>
+        </form>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="tarjeta">
+      <div class="tarjeta-cab"><h2>Días propios agregados</h2><span class="nota">{{ n_propios }}</span></div>
+      {% for mes, dias in meses.items %}
+        <span class="etiqueta">{{ dias.0.fecha|date:"F" }}</span>
+        <ul class="lista-simple">
+          {% for d in dias %}
+          <li>
+            <span><strong>{{ d.fecha|date:"D j" }}</strong> · {{ d.descripcion|default:d.get_motivo_display }} <span class="chip {% if d.motivo == 'VACACIONES' %}info{% elif d.motivo == 'ANIVERSARIO' %}ok{% else %}aviso{% endif %}">{{ d.get_motivo_display }}</span></span>
+            <form method="post" class="inline">{% csrf_token %}<input type="hidden" name="anio" value="{{ anio.pk }}"><input type="hidden" name="accion" value="quitar"><input type="hidden" name="dia_id" value="{{ d.pk }}"><button class="enlace-boton peligro" type="submit">Quitar</button></form>
+          </li>
+          {% endfor %}
+        </ul>
+      {% empty %}
+        <div class="vacio">Aún no agregas el aniversario ni las vacaciones.</div>
+      {% endfor %}
+    </div>
   </div>
 
   <div class="tarjeta">
-    <div class="tarjeta-cab"><h2>Días registrados</h2><span class="nota">{{ total }} días hábiles sin clases</span></div>
-    {% for mes, dias in meses.items %}
-      <span class="etiqueta">{{ dias.0.fecha|date:"F" }}</span>
-      <ul class="lista-simple">
-        {% for d in dias %}
-        <li>
-          <span><strong>{{ d.fecha|date:"D j" }}</strong> · {{ d.descripcion|default:d.get_motivo_display }} <span class="chip {% if d.motivo == 'FERIADO' %}error{% elif d.motivo == 'VACACIONES' %}info{% endif %}">{{ d.get_motivo_display }}</span></span>
-          <form method="post" class="inline">{% csrf_token %}<input type="hidden" name="accion" value="quitar"><input type="hidden" name="dia_id" value="{{ d.pk }}"><button class="enlace-boton peligro" type="submit">Quitar</button></form>
-        </li>
-        {% endfor %}
-      </ul>
-    {% empty %}
-      <div class="vacio">Aún no hay feriados ni vacaciones registrados.</div>
-    {% endfor %}
+    <div class="tarjeta-cab"><h2>Feriados nacionales {{ anio.anio }}</h2><span class="chip ok">Automático</span></div>
+    <p class="nota" style="margin:0">Se cargan solos cada año, incluida Semana Santa. Solo aparecen los que caen de lunes a viernes durante las clases.</p>
+    <ul class="lista-simple">
+      {% for d in nacionales %}
+      <li><span><strong>{{ d.fecha|date:"D j M" }}</strong> · {{ d.descripcion }}</span></li>
+      {% empty %}
+      <li><span class="nota">Ningún feriado nacional cae en días de clase.</span></li>
+      {% endfor %}
+    </ul>
   </div>
 </div>
+{% endif %}
 {% endblock %}

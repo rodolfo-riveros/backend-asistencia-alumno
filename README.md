@@ -81,6 +81,20 @@ Todos con la contraseña **`Demo2026!`** (cámbiala con `sembrar_demo --password
 
 ## Panel web
 
+El panel abre en **Inicio**: la asistencia del día con sus estadísticas (KPIs, % por grado, últimos
+15 días hábiles, secciones pendientes). El menú sigue el orden de trabajo: **Organización del año**
+(Año escolar, Grados y secciones, Cursos y horarios, Calendario), **Personas** (Docentes, Estudiantes,
+Importar, Carnets), **Asistencia** (Reportes) y **Sistema** (Usuarios y roles, Institución y reglas).
+Quien no tiene permiso para ver la asistencia entra directo a la primera sección que sí puede ver.
+
+### Año nuevo y paso de año
+
+1. **Año escolar → Nuevo año escolar** (4 pasos): fechas de clases, qué copiar del año anterior (todo, solo
+   secciones o nada) y cuándo activarlo. Los feriados nacionales se agregan solos. El año nuevo no se activa solo; la app sigue en el actual hasta pulsar **Activar**.
+2. **Pasar de año**: por cada salón, todos pasan al grado siguiente (misma letra) con un clic. Solo se
+   cambia a quien **repite** (otra sección del mismo grado) o **no continúa**. El último grado egresa por
+   defecto. Se puede repetir sin duplicar matrículas; la matrícula del año anterior no se toca.
+
 ### Roles y permisos (todo configurable)
 
 Cada usuario tiene **un rol**, y cada rol es una lista de **permisos** que se marcan en
@@ -90,7 +104,7 @@ al abrirse, en la app.
 
 | Permiso | Qué habilita |
 |---|---|
-| Panel web (11) | Una casilla por cada sección del menú: Dashboard, Reportes, Estudiantes, Grados y secciones, Docentes, Cursos y horarios, Carnets, Importar, Calendario, Configuración, Usuarios y roles |
+| Panel web (12) | Una casilla por cada sección del menú: Inicio (asistencia del día), Año escolar, Grados y secciones, Cursos y horarios, Calendario, Docentes, Estudiantes, Importar, Carnets, Reportes, Institución y reglas, Usuarios y roles |
 | Ingresar a la app | Iniciar sesión en el teléfono |
 | Pasar lista | Registrar en sus secciones (tutor o docente de curso) |
 | Escanear en la puerta | Registrar el ingreso de cualquier estudiante con su carnet |
@@ -114,10 +128,10 @@ primaria/secundaria, renombrar o agregar grados).
 | Estudiantes | Búsqueda en vivo, ficha con apoderados, matrícula (retiro/traslado), carnet (imprimir, regenerar, dar de baja) |
 | Grados y secciones | Secciones del año activo: grado, letra, turno, tutor, aula, capacidad |
 | Docentes y asignaciones | Crear docente (contraseña temporal), tutoría, cursos por sección, restablecer contraseña |
-| Cursos y horarios | Catálogo de áreas y horario semanal por sección (detecta choques de docente) |
-| Carnets QR | Hoja A4 por sección (8 carnets de 85,6 × 54 mm) o por estudiante |
+| Cursos y horarios | Catálogo de áreas y horario semanal por sección. El curso lo dicta el tutor salvo que se elija otro docente; un bloque se agrega a varios días a la vez. Detecta choques de docente y de salón |
+| Carnets QR | Hoja A4 por sección (8 carnets de 85,6 × 54 mm) o por estudiante. Cada carnet lleva el logo de la I.E. y el QR (sin foto) |
 | Importar estudiantes | Plantilla Excel o nómina de SIAGIE → vista previa con errores por fila → importar |
-| Calendario | Feriados, vacaciones y días sin clases |
+| Calendario | Los feriados nacionales de cada año (incluida Semana Santa) se cargan solos. A mano solo se agregan el aniversario, feriados regionales, vacaciones y otros días sin clases |
 | Usuarios y roles | Usuarios (crear, editar, restablecer clave, activar), roles y su matriz de permisos |
 | Configuración | Institución (nombre, logo, portada…), reglas, turnos, años escolares, niveles y grados |
 | Dashboard del día | KPIs, % por grado, últimos 15 días hábiles, tabla por sección, «Aún sin registrar». Filtros fecha y turno. Se actualiza cada 60 s. Excel y PDF |
@@ -134,7 +148,15 @@ incompletas hoy, como máximo una vez cada 15 minutos. Solo llega a quienes teng
 notificaciones activas; el registro del token en la app llega con la build de EAS (Fase 7), porque Expo Go
 no recibe notificaciones remotas en Android.
 
-**Contraseñas temporales:** al crear un usuario o restablecer su clave, el panel la muestra **una sola vez**.
+**Docentes: correo + DNI.** Al crear un docente su DNI es obligatorio y es su contraseña (no se le
+obliga a cambiarla). Si la olvida o se bloquea, «Volver a la clave DNI» en su ficha la restablece.
+Si se corrige el DNI y aún usaba el anterior como clave, la clave pasa al DNI nuevo.
+
+**Primaria: el tutor dicta todo.** Al crear/editar una sección o asignar una tutoría, la casilla
+«El tutor(a) dicta todos los cursos» le asigna los cursos que no tienen docente; al cambiar de tutor,
+sus cursos pasan al nuevo. Los de otros docentes (Inglés, Educación Física) no se tocan.
+
+**Contraseñas temporales** (usuarios sin DNI): al crear un usuario o restablecer su clave, el panel la muestra **una sola vez**.
 El usuario debe cambiarla al entrar (en el panel o en la app).
 
 ## Comandos útiles

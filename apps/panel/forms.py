@@ -23,6 +23,22 @@ def generar_password_temporal() -> str:
     return "".join(secrets.choice(alfabeto) for _ in range(10))
 
 
+def poner_clave_inicial(usuario) -> str | None:
+    """Con DNI, la contraseña es el DNI (fácil de recordar). Sin DNI, una temporal que debe cambiar.
+
+    Devuelve la clave temporal para mostrarla una vez, o None si se usó el DNI.
+    """
+    usuario.intentos_fallidos, usuario.bloqueado_hasta = 0, None
+    if usuario.dni:
+        usuario.set_password(usuario.dni)
+        usuario.debe_cambiar_password = False
+        return None
+    clave = generar_password_temporal()
+    usuario.set_password(clave)
+    usuario.debe_cambiar_password = True
+    return clave
+
+
 def docentes(activos=True):
     """Usuarios cuyo rol tiene el permiso 'Es docente'."""
     qs = Usuario.objects.filter(rol__in=roles_con("academico.docente")).select_related("rol")
@@ -70,6 +86,10 @@ class CambiarPasswordForm(forms.Form):
 # --------------------------------------------------------------------- académico
 class SeccionForm(forms.ModelForm):
     tutor = NombreDocenteChoice(queryset=Usuario.objects.none(), required=False, label="Tutor(a)")
+    tutor_dicta_todo = forms.BooleanField(
+        required=False, initial=True, label="El tutor(a) dicta todos los cursos",
+        help_text="Lo usual en primaria. Los cursos de otros docentes (p. ej. Inglés) se asignan aparte y no se tocan.",
+    )
 
     class Meta:
         model = Seccion
@@ -107,13 +127,20 @@ class CursoForm(forms.ModelForm):
 
 
 class DocenteForm(forms.ModelForm):
+    dni_obligatorio = True
+
     class Meta:
         model = Usuario
-        fields = ["nombres", "apellidos", "email", "celular", "rol", "is_active"]
-        labels = {"email": "Correo institucional", "is_active": "Cuenta activa", "rol": "Rol"}
+        fields = ["nombres", "apellidos", "dni", "email", "celular", "rol", "is_active"]
+        labels = {"email": "Correo", "is_active": "Cuenta activa", "rol": "Rol"}
+        widgets = {"dni": forms.TextInput(attrs={"inputmode": "numeric", "maxlength": 8, "autocomplete": "off"})}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["dni"].required = self.dni_obligatorio
+        self.fields["dni"].error_messages["required"] = "Ingresa su DNI: será su contraseña."
+        self.fields["dni"].help_text = "Será su contraseña para entrar a la app y al panel."
+        self.fields["email"].help_text = "Con este correo inicia sesión."
         if "rol" in self.fields:
             self.fields["rol"].queryset = roles_docentes()
             self.fields["rol"].empty_label = None
@@ -134,13 +161,36 @@ class DocenteForm(forms.ModelForm):
             raise ValidationError("Ya existe un usuario con este correo.")
         return email
 
+    def clean_dni(self):
+        dni = (self.cleaned_data.get("dni") or "").strip()
+        if not dni:
+            return None
+        if not (dni.isdigit() and len(dni) == 8):
+            raise ValidationError("El DNI tiene 8 dígitos.")
+        if Usuario.objects.filter(dni=dni).exclude(pk=self.instance.pk).exists():
+            raise ValidationError("Ya existe un usuario con este DNI.")
+        return dni
+
+    def save(self, commit=True):
+        u = super().save(commit=False)
+        anterior = self.initial.get("dni")
+        # Si cambia el DNI y aún usaba el anterior como contraseña, la contraseña pasa al DNI nuevo
+        if u.pk and u.dni and anterior and anterior != u.dni and u.check_password(anterior):
+            u.set_password(u.dni)
+        if commit:
+            u.save()
+        return u
+
 
 class UsuarioForm(DocenteForm):
+    dni_obligatorio = False
+
     class Meta(DocenteForm.Meta):
-        fields = ["nombres", "apellidos", "email", "rol", "celular", "is_active"]
+        fields = ["nombres", "apellidos", "dni", "email", "rol", "celular", "is_active"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["dni"].help_text = "Opcional. Si lo pones, será su contraseña; si no, se genera una temporal."
         self.fields["rol"].queryset = Rol.objects.order_by("nombre")
         self.fields["rol"].required = True
         self.fields["rol"].empty_label = "Elige un rol"
@@ -201,26 +251,42 @@ class AsignacionForm(forms.Form):
 
 class TutoriaForm(forms.Form):
     seccion = SeccionChoice(queryset=Seccion.objects.none(), label="Sección")
+    todos_cursos = forms.BooleanField(required=False, initial=True, label="Dicta todos los cursos de la sección")
 
     def __init__(self, *args, anio=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["seccion"].queryset = Seccion.objects.filter(anio_escolar=anio).select_related("grado", "turno")
 
 
-class BloqueForm(forms.ModelForm):
-    dia_semana = forms.TypedChoiceField(choices=DIAS_SEMANA, coerce=int, label="Día")
+class BloqueForm(forms.Form):
+    """Un curso en uno o varios días a la misma hora. El docente por defecto es el tutor."""
 
-    class Meta:
-        model = BloqueHorario
-        fields = ["asignacion", "dia_semana", "hora_inicio", "hora_fin"]
-        labels = {"asignacion": "Curso y docente", "hora_inicio": "Inicio", "hora_fin": "Fin"}
-        widgets = {"hora_inicio": HORA, "hora_fin": HORA}
+    curso = forms.ModelChoiceField(queryset=Curso.objects.filter(activo=True), label="Curso / área", empty_label="Elige el curso")
+    docente = NombreDocenteChoice(queryset=Usuario.objects.none(), required=False, label="Lo dicta")
+    dias = forms.TypedMultipleChoiceField(choices=DIAS_SEMANA, coerce=int, label="Días", widget=forms.CheckboxSelectMultiple)
+    hora_inicio = forms.TimeField(label="Inicio", widget=HORA)
+    hora_fin = forms.TimeField(label="Fin", widget=HORA)
 
     def __init__(self, *args, seccion=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.instance.seccion = seccion
-        self.fields["asignacion"].queryset = Asignacion.objects.filter(seccion=seccion).select_related("curso", "docente")
-        self.fields["asignacion"].label_from_instance = lambda a: f"{a.curso} · {a.docente.nombre_completo}"
+        self.seccion = seccion
+        self.fields["docente"].queryset = docentes()
+        tutor = seccion.tutor if seccion else None
+        self.fields["docente"].empty_label = f"Su tutor(a): {tutor.nombre_completo}" if tutor else "Elige quién lo dicta"
+        self.fields["docente"].help_text = "Cambia solo si lo dicta otro docente (p. ej. Inglés o Educación Física)."
+
+    def clean(self):
+        datos = super().clean()
+        inicio, fin = datos.get("hora_inicio"), datos.get("hora_fin")
+        if inicio and fin and fin <= inicio:
+            self.add_error("hora_fin", "Debe ser posterior a la hora de inicio.")
+        curso = datos.get("curso")
+        if curso and not datos.get("docente"):
+            actual = Asignacion.objects.filter(seccion=self.seccion, curso=curso).select_related("docente").first()
+            datos["docente"] = actual.docente if actual else self.seccion.tutor
+            if not datos["docente"]:
+                self.add_error("docente", "La sección no tiene tutor: elige quién dicta el curso.")
+        return datos
 
 
 # --------------------------------------------------------------------- estudiantes
@@ -377,10 +443,16 @@ class AnioEscolarForm(forms.ModelForm):
 
 
 class DiaNoLectivoForm(forms.Form):
-    desde = forms.DateField(label="Fecha (o desde)", widget=FECHA)
-    hasta = forms.DateField(label="Hasta", widget=FECHA, required=False, help_text="Solo para rangos como vacaciones.")
-    motivo = forms.ChoiceField(choices=DiaNoLectivo.Motivo.choices, label="Motivo")
-    descripcion = forms.CharField(label="Descripción", max_length=150, required=False)
+    desde = forms.DateField(label="Fecha", widget=FECHA)
+    hasta = forms.DateField(label="Hasta", widget=FECHA, required=False, help_text="Solo si son varios días seguidos, como vacaciones.")
+    motivo = forms.ChoiceField(
+        choices=[c for c in DiaNoLectivo.Motivo.choices if c[0] != DiaNoLectivo.Motivo.FERIADO], label="Motivo",
+        initial=DiaNoLectivo.Motivo.ANIVERSARIO, widget=forms.RadioSelect,
+    )
+    descripcion = forms.CharField(
+        label="Descripción", max_length=150, required=False,
+        widget=forms.TextInput(attrs={"placeholder": "Ej.: 45.º aniversario de la I.E., Vacaciones de medio año"}),
+    )
 
     def __init__(self, *args, anio=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -398,3 +470,63 @@ class DiaNoLectivoForm(forms.Form):
                 raise ValidationError(f"La fecha debe pertenecer al año escolar {self.anio}.")
         datos["hasta"] = hasta
         return datos
+
+
+class NuevoAnioForm(forms.Form):
+    COPIAR = [
+        ("todo", "Todo"),
+        ("secciones", "Solo grados y secciones"),
+        ("nada", "Empezar vacío"),
+    ]
+    CUANDO = [
+        ("despues", "Lo preparo ahora y lo activo cuando empiecen las clases"),
+        ("ahora", "Empezar a usarlo desde hoy"),
+    ]
+
+    anio = forms.IntegerField(label="Año", min_value=2000, max_value=2100)
+    fecha_inicio = forms.DateField(label="Primer día de clases", widget=FECHA)
+    fecha_fin = forms.DateField(label="Último día de clases", widget=FECHA)
+    copiar_de = forms.ModelChoiceField(
+        queryset=AnioEscolar.objects.order_by("-anio"), required=False, label="Copiar desde", empty_label=None,
+    )
+    copiar = forms.ChoiceField(choices=COPIAR, initial="todo", widget=forms.RadioSelect, label="¿Qué traemos del año anterior?")
+    cuando = forms.ChoiceField(choices=CUANDO, initial="despues", widget=forms.RadioSelect, label="¿Cuándo se usa?")
+
+    def clean_anio(self):
+        anio = self.cleaned_data["anio"]
+        if AnioEscolar.objects.filter(anio=anio).exists():
+            raise ValidationError(f"El año {anio} ya existe.")
+        return anio
+
+    def clean(self):
+        d = super().clean()
+        ini, fin, anio = d.get("fecha_inicio"), d.get("fecha_fin"), d.get("anio")
+        if ini and fin and fin <= ini:
+            self.add_error("fecha_fin", "Debe ser posterior al primer día de clases.")
+        if ini and anio and ini.year != anio:
+            self.add_error("fecha_inicio", f"Debe ser una fecha de {anio}.")
+        if fin and anio and fin.year != anio:
+            self.add_error("fecha_fin", f"Debe ser una fecha de {anio}.")
+        copiar = d.get("copiar")
+        if copiar == "nada" or not d.get("copiar_de"):
+            d["copiar_de"] = None
+        d["copiar_secciones"] = copiar in ("todo", "secciones")
+        d["copiar_cursos"] = copiar == "todo"
+        d["activar"] = d.get("cuando") == "ahora"
+        return d
+
+
+class AnioFechasForm(forms.ModelForm):
+    """Solo las fechas: activar un año es una acción aparte (y explícita)."""
+
+    class Meta:
+        model = AnioEscolar
+        fields = ["fecha_inicio", "fecha_fin"]
+        labels = {"fecha_inicio": "Inicio de clases", "fecha_fin": "Fin de clases"}
+        widgets = {"fecha_inicio": FECHA, "fecha_fin": FECHA}
+
+    def clean(self):
+        d = super().clean()
+        if d.get("fecha_inicio") and d.get("fecha_fin") and d["fecha_fin"] <= d["fecha_inicio"]:
+            raise ValidationError("La fecha de fin debe ser posterior al inicio.")
+        return d

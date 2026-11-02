@@ -70,6 +70,7 @@ class Usuario(AbstractUser):
     )
     nombres = models.CharField(max_length=100)
     apellidos = models.CharField(max_length=100)
+    dni = models.CharField("DNI", max_length=8, unique=True, null=True, blank=True)
     celular = models.CharField(max_length=15, blank=True)
     debe_cambiar_password = models.BooleanField(default=False)
     expo_push_token = models.CharField(max_length=200, blank=True)

@@ -1,0 +1,137 @@
+{% extends "panel/base.html" %}
+{% load panel %}
+{% block titulo %}Año escolar{% endblock %}
+{% block contenido %}
+<header class="encabezado">
+  <div class="encabezado-texto">
+    <span class="contexto">Organización del año</span>
+    <h1 class="titulo">Año escolar</h1>
+  </div>
+  <div class="acciones">
+    {% if anios|length > 1 %}<a class="btn" href="{% url 'panel:promocion' %}">{% icono "flecha" 16 %}Pasar estudiantes de año</a>{% endif %}
+    <a class="btn primario" href="#nuevo-anio" onclick="document.getElementById('nuevo-anio').open = true">{% icono "mas" 16 %}Nuevo año escolar</a>
+  </div>
+</header>
+
+{% if pendiente_promocion %}
+<div class="aviso-paso">
+  <div>
+    <strong>Siguiente paso: pasa a los estudiantes de {{ pendiente_promocion.0.anio }} a {{ pendiente_promocion.1.anio }}.</strong>
+    <span class="sub">Todo el salón pasa al grado siguiente de una vez; luego solo cambias a quien repite o no continúa.</span>
+  </div>
+  <a class="btn primario" href="{% url 'panel:promocion' %}?origen={{ pendiente_promocion.0.pk }}&destino={{ pendiente_promocion.1.pk }}">Pasar de año {% icono "flecha" 16 %}</a>
+</div>
+{% endif %}
+
+<section class="anios">
+  {% for a, form in anios %}
+  <article class="tarjeta anio{% if a.activo %} activo{% endif %}">
+    <div class="tarjeta-cab">
+      <h2 class="anio-numero">{{ a.anio }}</h2>
+      {% if a.activo %}<span class="chip ok">Año activo</span>{% else %}<span class="chip">Inactivo</span>{% endif %}
+    </div>
+    <div class="datos">
+      <div class="dato"><span class="etiqueta">Clases</span>{{ a.fecha_inicio|date:"j M" }} – {{ a.fecha_fin|date:"j M Y" }}</div>
+      <div class="dato"><span class="etiqueta">Secciones</span>{{ a.n_secciones }}</div>
+      <div class="dato"><span class="etiqueta">Estudiantes</span>{{ a.n_estudiantes }}</div>
+    </div>
+    <details>
+      <summary class="enlace-boton" style="list-style:none">Cambiar fechas</summary>
+      <form method="post" class="formulario" style="margin-top:10px" novalidate>
+        {% csrf_token %}<input type="hidden" name="accion" value="editar"><input type="hidden" name="anio_id" value="{{ a.pk }}">
+        {% campo form.fecha_inicio %}{% campo form.fecha_fin %}
+        <div class="botones-form"><button class="btn chico primario" type="submit">Guardar fechas</button></div>
+      </form>
+    </details>
+    {% if not a.activo %}
+    <form method="post" onsubmit="return confirm('¿Activar {{ a.anio }}? La app y el panel empezarán a trabajar con este año.')">
+      {% csrf_token %}<input type="hidden" name="accion" value="activar"><input type="hidden" name="anio_id" value="{{ a.pk }}">
+      <button class="btn" type="submit" style="width:100%">Activar {{ a.anio }}</button>
+    </form>
+    {% endif %}
+  </article>
+  {% empty %}
+  <div class="tarjeta"><div class="vacio">Aún no hay años escolares. Crea el primero aquí abajo.</div></div>
+  {% endfor %}
+</section>
+
+<details class="tarjeta nuevo-anio" id="nuevo-anio" {% if abrir_nuevo %}open{% endif %}>
+  <summary class="tarjeta-cab" style="cursor:pointer;list-style:none"><h2>{% icono "mas" 18 %} Crear un nuevo año escolar</h2><span class="nota">4 pasos · menos de un minuto</span></summary>
+  <form method="post" novalidate
+        x-data="{ anio: {{ nuevo_form.anio.value|default:siguiente }}, ini: '{{ nuevo_form.fecha_inicio.value|date:'Y-m-d'|default:nuevo_form.fecha_inicio.value }}', fin: '{{ nuevo_form.fecha_fin.value|date:'Y-m-d'|default:nuevo_form.fecha_fin.value }}',
+                  cambiarAnio() { this.ini = this.anio + this.ini.slice(4); this.fin = this.anio + this.fin.slice(4) },
+                  get semanas() { const d = (new Date(this.fin) - new Date(this.ini)) / 6048e5; return d > 0 ? Math.round(d) : 0 } }">
+    {% csrf_token %}<input type="hidden" name="accion" value="crear">
+    {% if nuevo_form.non_field_errors %}<div class="errores-form">{% for e in nuevo_form.non_field_errors %}{{ e }}{% endfor %}</div>{% endif %}
+
+    <ol class="pasos-form">
+      <li>
+        <h3>¿Qué año y cuándo hay clases?</h3>
+        <div class="formulario">
+          <div class="campo{% if nuevo_form.anio.errors %} con-error{% endif %}">
+            <label for="id_anio">Año</label>
+            <input type="number" name="anio" id="id_anio" min="2000" max="2100" x-model.number="anio" @change="cambiarAnio()" required>
+            {% for e in nuevo_form.anio.errors %}<span class="error-campo">{{ e }}</span>{% endfor %}
+          </div>
+          <div class="campo{% if nuevo_form.fecha_inicio.errors %} con-error{% endif %}">
+            <label for="id_fecha_inicio">Primer día de clases</label>
+            <input type="date" name="fecha_inicio" id="id_fecha_inicio" x-model="ini" required>
+            {% for e in nuevo_form.fecha_inicio.errors %}<span class="error-campo">{{ e }}</span>{% endfor %}
+          </div>
+          <div class="campo{% if nuevo_form.fecha_fin.errors %} con-error{% endif %}">
+            <label for="id_fecha_fin">Último día de clases</label>
+            <input type="date" name="fecha_fin" id="id_fecha_fin" x-model="fin" required>
+            {% for e in nuevo_form.fecha_fin.errors %}<span class="error-campo">{{ e }}</span>{% endfor %}
+          </div>
+        </div>
+        <p class="nota" x-show="semanas" x-cloak>Unas <strong x-text="semanas"></strong> semanas de clases. Puedes cambiar las fechas después.</p>
+      </li>
+
+      {% if base %}
+      <li>
+        <h3>¿Qué traemos de {% if n_anios > 1 %}otro año{% else %}{{ base.anio }}{% endif %}?</h3>
+        {% if n_anios > 1 %}<div class="formulario"><div class="campo">{{ nuevo_form.copiar_de.label_tag }}{{ nuevo_form.copiar_de }}</div></div>{% else %}<input type="hidden" name="copiar_de" value="{{ base.pk }}">{% endif %}
+        <div class="opciones">
+          {% for op in nuevo_form.copiar %}
+          <label class="opcion">
+            {{ op.tag }}
+            <span>
+              <strong>{{ op.choice_label }}{% if op.data.value == "todo" %} <span class="chip ok">Recomendado</span>{% endif %}</strong>
+              <span class="sub">
+                {% if op.data.value == "todo" %}Las {{ base_secciones }} secciones con su tutor, aula y turno, y los {{ base_cursos }} cursos con su docente.
+                {% elif op.data.value == "secciones" %}Las {{ base_secciones }} secciones con su tutor ({{ base_tutores }}), sin los cursos asignados.
+                {% else %}Creas las secciones a mano desde Grados y secciones.{% endif %}
+              </span>
+            </span>
+          </label>
+          {% endfor %}
+        </div>
+        <p class="nota">Los estudiantes no se copian: se pasan de año en el siguiente paso, salón por salón o todos a la vez.</p>
+      </li>
+      {% else %}<input type="hidden" name="copiar" value="nada">
+      {% endif %}
+
+      <li>
+        <h3>Feriados</h3>
+        <p class="nota" style="margin:0">{% icono "calendario" 16 %} Los feriados nacionales de <strong x-text="anio">{{ siguiente }}</strong> se agregan solos, incluida Semana Santa. Después solo agregas el aniversario del colegio y las vacaciones en Calendario.</p>
+      </li>
+
+      <li>
+        <h3>¿Cuándo se usa?</h3>
+        <div class="opciones">
+          {% for op in nuevo_form.cuando %}
+          <label class="opcion">
+            {{ op.tag }}
+            <span>
+              <strong>{{ op.choice_label }}{% if op.data.value == "despues" %} <span class="chip ok">Recomendado</span>{% endif %}</strong>
+              <span class="sub">{% if op.data.value == "despues" %}La app sigue con {{ activo.anio|default:"el año actual" }} hasta que pulses «Activar».{% else %}La app y el panel pasan a trabajar con el año nuevo al instante.{% endif %}</span>
+            </span>
+          </label>
+          {% endfor %}
+        </div>
+      </li>
+    </ol>
+    <div class="botones-form"><button class="btn primario grande" type="submit">Crear año <span x-text="anio">{{ siguiente }}</span></button></div>
+  </form>
+</details>
+{% endblock %}

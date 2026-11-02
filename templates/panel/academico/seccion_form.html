@@ -4,16 +4,17 @@
 {% block contenido %}
 <header class="encabezado">
   <div class="encabezado-texto">
-    <span class="contexto"><a href="{% url 'panel:secciones' %}">Grados y secciones</a> · Año {{ anio_activo.anio }}</span>
+    <span class="contexto"><a href="{% url 'panel:secciones' %}?anio={{ anio.pk }}">Grados y secciones</a> · Año escolar {{ anio.anio }}</span>
     <h1 class="titulo">{% if seccion %}{{ seccion.nombre_largo }}{% else %}Nueva sección{% endif %}</h1>
   </div>
 </header>
 <div class="tarjeta" style="max-width:820px">
   <form method="post" class="formulario" novalidate>
-    {% csrf_token %}
+    {% csrf_token %}<input type="hidden" name="anio" value="{{ anio.pk }}">
     {% include "panel/parciales/form_generico.html" %}
     <div class="botones-form">
-      <a class="btn" href="{% url 'panel:secciones' %}">Cancelar</a>
+      <a class="btn" href="{% url 'panel:secciones' %}?anio={{ anio.pk }}">Cancelar</a>
+      {% if not seccion %}<button class="btn" type="submit" name="otra" value="1">Guardar y crear otra</button>{% endif %}
       <button class="btn primario" type="submit">Guardar</button>
     </div>
   </form>

@@ -8,7 +8,7 @@
   </div>
 </header>
 <div class="tarjeta" style="max-width:820px">
-  <p class="nota" style="margin:0">Se crea su usuario para la app con una contraseña temporal que verás una sola vez.</p>
+  <p class="nota" style="margin:0">Entrará a la app con su <strong>correo</strong> y su <strong>DNI como contraseña</strong>. Si la olvida, la restableces aquí y vuelve a ser su DNI.</p>
   <form method="post" action="{% url 'panel:docentes' %}" class="formulario" novalidate>
     {% csrf_token %}
     {% include "panel/parciales/form_generico.html" %}

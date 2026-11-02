@@ -105,9 +105,11 @@ class Turno(ModeloBase):
 
 class DiaNoLectivo(ModeloBase):
     class Motivo(models.TextChoices):
-        FERIADO = "FERIADO", "Feriado"
+        FERIADO = "FERIADO", "Feriado nacional"
+        ANIVERSARIO = "ANIVERSARIO", "Aniversario de la institución"
+        LOCAL = "LOCAL", "Feriado regional o local"
         VACACIONES = "VACACIONES", "Vacaciones"
-        OTRO = "OTRO", "Otro"
+        OTRO = "OTRO", "Otro día sin clases"
 
     anio_escolar = models.ForeignKey(AnioEscolar, on_delete=models.PROTECT, related_name="dias_no_lectivos")
     fecha = models.DateField()
