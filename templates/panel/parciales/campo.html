@@ -1,0 +1,10 @@
+<div class="campo{% if field.errors %} con-error{% endif %}{% if ancho %} ancho{% endif %}{% if field.widget_type == 'checkbox' %} campo-check{% endif %}">
+  {% if field.widget_type == 'checkbox' %}
+    {{ field }}<label for="{{ field.id_for_label }}">{{ field.label }}</label>
+  {% else %}
+    <label for="{{ field.id_for_label }}">{{ field.label }}{% if not field.field.required %} <span style="font-weight:400;color:var(--text-muted)">(opcional)</span>{% endif %}</label>
+    {{ field }}
+  {% endif %}
+  {% if ayuda %}<span class="ayuda">{{ ayuda }}</span>{% endif %}
+  {% for e in field.errors %}<span class="error-campo">{{ e }}</span>{% endfor %}
+</div>

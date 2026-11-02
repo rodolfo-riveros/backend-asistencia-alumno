@@ -1,0 +1,63 @@
+{% extends "panel/impresion/base.html" %}
+{% load panel %}
+{% block titulo %}{{ titulo }}{% endblock %}
+{% block barra %}{{ titulo }} · {{ subtitulo }}{% endblock %}
+{% block encabezado %}{{ titulo }}{% endblock %}
+{% block derecha %}{{ subtitulo }}{% endblock %}
+{% block cuerpo %}
+{% if tab == "mensual" and matriz %}
+  <table class="matriz">
+    <thead><tr>
+      <th>Estudiante</th>
+      {% for letra, dia in dias_cab %}<th class="c">{{ letra }}<br>{{ dia }}</th>{% endfor %}
+      <th class="c">P</th><th class="c">T</th><th class="c">F</th><th class="c">J</th><th class="r">%</th>
+    </tr></thead>
+    <tbody>
+    {% for x in matriz.filas %}
+      <tr>
+        <td style="white-space:nowrap;font-weight:600">{{ x.nombre }}</td>
+        {% for e in x.celdas %}<td class="celda {{ e|celda }}">{{ e|default:"" }}</td>{% endfor %}
+        <td class="c"><b>{{ x.p }}</b></td><td class="c"><b>{{ x.t }}</b></td><td class="c"><b>{{ x.f }}</b></td><td class="c"><b>{{ x.j }}</b></td>
+        <td class="r {% if x.porcentaje is not None and x.porcentaje < 90 %}bajo{% endif %}"><b>{{ x.porcentaje|pct }}</b></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="pie">
+    % = (presente + tarde + justificado) ÷ días hábiles registrados · Promedio de la sección: <b>{{ matriz.promedio|pct }}</b>
+    {% if matriz.riesgo %}<br>Alerta de riesgo: {% for x in matriz.riesgo %}{{ x.nombre }} ({{ x.f }} F, {{ x.t }} T){% if not forloop.last %}; {% endif %}{% endfor %}{% endif %}
+  </p>
+{% elif tab == "diario" %}
+  <table>
+    <thead><tr><th>Estudiante</th><th>Estado</th><th>Hora</th><th>Método</th><th>Justificación</th></tr></thead>
+    <tbody>
+    {% for f in filas_diario %}
+      <tr>
+        <td><b>{{ f.matricula.estudiante.apellidos }}</b>, {{ f.matricula.estudiante.nombres }}</td>
+        <td>{% if f.registro %}<span class="chip {{ f.registro.estado|lower }}">{{ f.registro.get_estado_display }}</span>{% else %}Sin registrar{% endif %}</td>
+        <td>{% if f.registro %}{{ f.registro.marcado_en|time:"G:i" }}{% endif %}</td>
+        <td>{% if f.registro %}{{ f.registro.get_metodo_display }}{% endif %}</td>
+        <td>{% if f.justificacion %}{{ f.justificacion.get_motivo_display }}{% if f.justificacion.detalle %} · {{ f.justificacion.detalle }}{% endif %}{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="pie">P {{ conteo.P }} · T {{ conteo.T }} · F {{ conteo.F }} · J {{ conteo.J }} · Sin registrar {{ sin_registrar }}</p>
+{% else %}
+  <table>
+    <thead><tr><th>Estudiante</th><th>Sección</th><th class="c">P</th><th class="c">T</th><th class="c">F</th><th class="c">J</th><th class="c">Días</th><th class="r">%</th></tr></thead>
+    <tbody>
+    {% for x in filas_lista %}
+      <tr>
+        <td><b>{{ x.nombre }}</b></td><td>{{ x.matricula.seccion.nombre_corto }}</td>
+        <td class="c">{{ x.p }}</td><td class="c">{{ x.t }}</td><td class="c">{{ x.f }}</td><td class="c">{{ x.j }}</td><td class="c">{{ x.registrados }}</td>
+        <td class="r {% if x.porcentaje is not None and x.porcentaje < 90 %}bajo{% endif %}"><b>{{ x.porcentaje|pct }}</b></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="8">Sin estudiantes.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="pie">% = (presente + tarde + justificado) ÷ días registrados{% if tab == "alertas" %} · Umbrales: {{ matriz.umbral_faltas }}+ faltas o {{ matriz.umbral_tardanzas }}+ tardanzas{% endif %}</p>
+{% endif %}
+{% endblock %}

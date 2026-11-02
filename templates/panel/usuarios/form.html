@@ -1,0 +1,49 @@
+{% extends "panel/base.html" %}
+{% load panel %}
+{% block titulo %}{% if usuario_editado %}{{ usuario_editado.nombre_completo }}{% else %}Nuevo usuario{% endif %}{% endblock %}
+{% block contenido %}
+<header class="encabezado">
+  <div class="encabezado-texto">
+    <span class="contexto"><a href="{% url 'panel:usuarios' %}">Usuarios y roles</a>{% if usuario_editado %} · {{ usuario_editado.email }}{% endif %}</span>
+    <h1 class="titulo">{% if usuario_editado %}{{ usuario_editado.nombre_completo }}{% else %}Nuevo usuario{% endif %}</h1>
+  </div>
+  {% if usuario_editado %}
+  <div class="acciones">
+    {% if usuario_editado.debe_cambiar_password %}<span class="chip aviso">Debe cambiar su contraseña</span>{% endif %}
+    {% if usuario_editado.esta_bloqueado %}<span class="chip error">Bloqueado por intentos fallidos</span>{% endif %}
+    <form method="post" class="inline" onsubmit="return confirm('Se generará una contraseña temporal nueva. ¿Continuar?')">
+      {% csrf_token %}<input type="hidden" name="accion" value="restablecer">
+      <button class="btn" type="submit">Restablecer contraseña</button>
+    </form>
+  </div>
+  {% endif %}
+</header>
+
+<div class="rejilla">
+  <div class="tarjeta">
+    <div class="tarjeta-cab"><h2>Datos y rol</h2></div>
+    {% if not usuario_editado %}<p class="nota" style="margin:0">Se creará con una contraseña temporal que verás una sola vez.</p>{% endif %}
+    <form method="post" class="formulario" novalidate>
+      {% csrf_token %}
+      {% include "panel/parciales/form_generico.html" %}
+      <div class="botones-form">
+        <a class="btn" href="{% url 'panel:usuarios' %}">Cancelar</a>
+        <button class="btn primario" type="submit">{% if usuario_editado %}Guardar{% else %}Crear usuario{% endif %}</button>
+      </div>
+    </form>
+  </div>
+
+  {% if usuario_editado %}
+  <div class="tarjeta">
+    <div class="tarjeta-cab"><h2>Lo que puede hacer</h2><a href="{% url 'panel:rol' usuario_editado.rol.pk %}" style="font-size:14px;font-weight:700">Editar rol «{{ usuario_editado.rol.nombre }}»</a></div>
+    {% if permisos_rol %}
+    <ul class="lista-simple">
+      {% for p in permisos_rol %}<li><span>{{ p|nombre_permiso }}</span><span class="chip ok">Sí</span></li>{% endfor %}
+    </ul>
+    {% else %}
+    <p class="nota" style="margin:0">Este rol aún no tiene permisos.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

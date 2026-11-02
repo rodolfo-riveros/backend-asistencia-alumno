@@ -1,0 +1,31 @@
+{% extends "panel/base.html" %}
+{% load panel %}
+{% block titulo %}{% if es_hoy %}Asistencia de hoy{% else %}Asistencia del {{ fecha|date:"j/m/Y" }}{% endif %}{% endblock %}
+{% block contenido %}
+<header class="encabezado">
+  <div class="encabezado-texto">
+    <span class="contexto">{{ fecha_texto }}{% if es_hoy %} · actualizado <span id="actualizado">{{ actualizado }}</span>{% endif %}</span>
+    <h1 class="titulo">{% if es_hoy %}Asistencia de hoy{% else %}Asistencia del día{% endif %}</h1>
+  </div>
+  <form class="acciones" method="get">
+    <label class="filtro-etiqueta">
+      <span>Fecha</span>
+      <input type="date" name="fecha" value="{{ fecha|date:'Y-m-d' }}" onchange="this.form.submit()" aria-label="Fecha">
+    </label>
+    <label class="filtro-etiqueta">
+      <span>Turno</span>
+      <select name="turno" onchange="this.form.submit()" aria-label="Turno">
+        <option value="">Todos</option>
+        {% for v, t in turnos %}<option value="{{ v }}" {% if turno == v %}selected{% endif %}>{{ t }}</option>{% endfor %}
+      </select>
+    </label>
+    <a class="btn" href="?{{ query }}&formato=xlsx">{% icono "descargar" 16 %}Excel</a>
+    <a class="btn primario" href="?{{ query }}&formato=imprimir" target="_blank">{% icono "descargar" 16 %}PDF</a>
+  </form>
+</header>
+
+<div id="dashboard"
+     {% if es_hoy %}hx-get="{% url 'panel:inicio' %}?{{ query }}" hx-trigger="every 60s" hx-swap="innerHTML"{% endif %}>
+  {% include "panel/dashboard/_contenido.html" %}
+</div>
+{% endblock %}

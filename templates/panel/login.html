@@ -1,0 +1,39 @@
+{% load static panel %}<!DOCTYPE html>
+<html lang="es-PE">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Iniciar sesión · Asistencia</title>
+  <link rel="stylesheet" href="{% static 'panel/css/tokens.css' %}">
+  <link rel="stylesheet" href="{% static 'panel/css/panel.css' %}?v=8">
+</head>
+<body>
+<main class="login-pagina{% if institucion.imagen_portada %} con-portada{% endif %}">
+  {% if institucion.imagen_portada %}<div class="login-portada" style="background-image:url('{% url 'portada_institucion' %}?v={{ institucion.version_imagenes }}')" role="img" aria-label="{{ institucion.nombre }}"></div>{% endif %}
+  <div class="login-lado">
+  <div class="login-caja">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <span class="login-logo">{% if institucion.logo %}<img src="{% url 'logo_institucion' %}?v={{ institucion.version_imagenes }}" alt="Logo de {{ institucion.nombre }}">{% else %}{% icono "escudo" 28 "#F4F3EE" %}{% endif %}</span>
+      <span class="etiqueta">{{ institucion.nombre }}</span>
+      <h1>{% if cambiar %}Crea tu nueva contraseña{% else %}Panel de administración{% endif %}</h1>
+      <p style="margin:0;color:var(--text-muted)">
+        {% if cambiar %}Por seguridad, cambia la contraseña temporal antes de continuar.{% else %}Control de asistencia · ingresa con tu correo institucional.{% endif %}
+      </p>
+    </div>
+
+    <form method="post" class="formulario" style="grid-template-columns:1fr" novalidate>
+      {% csrf_token %}
+      {% if error %}<div class="errores-form">{{ error }}</div>{% endif %}
+      {% include "panel/parciales/form_generico.html" %}
+      <input type="hidden" name="next" value="{{ next }}">
+      <button class="btn primario grande" type="submit">{% if cambiar %}Guardar contraseña{% else %}Ingresar →{% endif %}</button>
+      {% if not cambiar %}
+      <p style="margin:0;font-size:13px;color:var(--text-muted)">¿La olvidaste? Pide al administrador que la restablezca.</p>
+      {% endif %}
+    </form>
+
+  </div>
+  </div>
+</main>
+</body>
+</html>

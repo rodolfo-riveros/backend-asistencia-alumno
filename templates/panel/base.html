@@ -1,0 +1,57 @@
+{% load static panel %}<!DOCTYPE html>
+<html lang="es-PE">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Panel{% endblock %} · Asistencia</title>
+  <link rel="preload" href="{% static 'panel/fonts/Figtree.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{% static 'panel/css/tokens.css' %}">
+  <link rel="stylesheet" href="{% static 'panel/css/panel.css' %}?v=8">
+  <script src="{% static 'panel/js/htmx.min.js' %}" defer></script>
+  <script src="{% static 'panel/js/alpine.min.js' %}" defer></script>
+  {% block cabeza %}{% endblock %}
+</head>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+<div class="layout">
+  <aside class="sidebar">
+    <a class="marca" href="{% if menu_items %}{% url menu_items.0.2 %}{% else %}#{% endif %}">
+      <span class="marca-logo">
+        {% if institucion.logo %}<img src="{% url 'logo_institucion' %}?v={{ institucion.version_imagenes }}" alt="">
+        {% else %}{% icono "escudo" 22 "#14213D" %}{% endif %}
+      </span>
+      <span>
+        <span class="marca-titulo">Asistencia</span>
+        <span class="marca-sub">{{ institucion.nombre_visible }}</span>
+      </span>
+    </a>
+    <nav class="menu" aria-label="Principal">
+      {% for clave, permiso, url, texto, icono_menu in menu_items %}
+      <a href="{% url url %}" {% if menu == clave %}aria-current="page"{% endif %}>{% icono icono_menu %}{{ texto }}</a>
+      {% endfor %}
+    </nav>
+    <div class="sidebar-pie">
+      <span class="avatar">{{ request.user.iniciales }}</span>
+      <div>
+        <div style="font-size:14px;font-weight:700">{{ request.user.nombre_corto }} · {{ request.user.rol.nombre }}</div>
+        <form method="post" action="{% url 'panel:logout' %}">{% csrf_token %}<button type="submit">Cerrar sesión</button></form>
+      </div>
+    </div>
+  </aside>
+
+  <main class="contenido" id="contenido">
+    {% if messages %}
+    <div class="mensajes" x-data>
+      {% for m in messages %}
+      <div class="mensaje {{ m.tags }}" x-data="{ ver: true }" x-show="ver">
+        <span>{{ m }}</span>
+        <button type="button" @click="ver = false" aria-label="Cerrar">×</button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% block contenido %}{% endblock %}
+  </main>
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

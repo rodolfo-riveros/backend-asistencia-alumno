@@ -1,0 +1,67 @@
+{% extends "panel/base.html" %}
+{% load panel %}
+{% block titulo %}Vista previa · Importar{% endblock %}
+{% block contenido %}
+<header class="encabezado">
+  <div class="encabezado-texto">
+    <span class="contexto"><a href="{% url 'panel:importar' %}">Importar estudiantes</a> · {{ nombre_archivo }}</span>
+    <h1 class="titulo">Vista previa</h1>
+  </div>
+</header>
+
+{% if resultado.errores_generales %}
+  <div class="tarjeta">
+    {% for e in resultado.errores_generales %}<div class="errores-form">{{ e }}</div>{% endfor %}
+    <div><a class="btn" href="{% url 'panel:importar' %}">Subir otro archivo</a></div>
+  </div>
+{% else %}
+<section class="rejilla-3">
+  <div class="kpi oscuro"><span class="kpi-titulo">Filas leídas</span><span class="kpi-valor">{{ resultado.filas|length }}</span></div>
+  <div class="kpi"><span class="kpi-titulo" style="color:var(--p-fg)">Se importarán</span><span class="kpi-valor">{{ resultado.validas|length }}</span><span class="kpi-nota">{{ nuevos }} nuevos · {{ actualizar }} actualizaciones</span></div>
+  <div class="kpi"><span class="kpi-titulo" style="color:var(--f-fg)">Con errores</span><span class="kpi-valor">{{ resultado.invalidas|length }}</span><span class="kpi-nota">no se importan</span></div>
+</section>
+
+<div class="tarjeta">
+  <div class="tarjeta-cab">
+    <h2>{% if resultado.validas %}2. Confirma la importación{% else %}No hay filas válidas{% endif %}</h2>
+  </div>
+  <p class="nota" style="margin:0">{% if resultado.invalidas %}Las filas con errores se omiten. Corrígelas en el Excel y vuelve a subirlo cuando quieras (las ya importadas solo se actualizarán).{% else %}Todas las filas son válidas.{% endif %}</p>
+  <div class="acciones">
+    <a class="btn" href="{% url 'panel:importar' %}">Cancelar</a>
+    {% if resultado.validas %}
+    <form method="post" class="inline">
+      {% csrf_token %}<input type="hidden" name="accion" value="confirmar"><input type="hidden" name="token" value="{{ token }}">
+      <button class="btn primario" type="submit">Importar {{ resultado.validas|length }} estudiante{{ resultado.validas|length|pluralize }}</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="tarjeta tabla-tarjeta">
+  <div class="tarjeta-cab"><h2>Filas</h2><span class="nota">Columnas reconocidas: {{ resultado.columnas_encontradas|join:", " }}</span></div>
+  <div class="tabla-scroll">
+    <table class="tabla">
+      <thead><tr><th>Fila</th><th>Código</th><th>Estudiante</th><th>DNI</th><th>Sección</th><th>Apoderado</th><th>Resultado</th></tr></thead>
+      <tbody>
+      {% for f in resultado.invalidas %}
+        <tr class="error">
+          <td>{{ f.numero }}</td><td>{{ f.datos.codigo_estudiante|default:"—" }}</td>
+          <td><strong>{{ f.datos.apellido_paterno }} {{ f.datos.apellido_materno }}</strong><span class="sub">{{ f.datos.nombres }}</span></td>
+          <td>{{ f.datos.dni|default:"—" }}</td><td>{{ f.seccion_texto|default:"—" }}</td><td>{{ f.datos.apoderado_nombre|default:"—" }}</td>
+          <td>{% for e in f.errores %}<span class="chip error" style="margin:2px 0;white-space:normal;height:auto;padding:3px 10px">{{ e }}</span><br>{% endfor %}</td>
+        </tr>
+      {% endfor %}
+      {% for f in resultado.validas %}
+        <tr>
+          <td>{{ f.numero }}</td><td>{{ f.datos.codigo_estudiante }}</td>
+          <td><strong>{{ f.datos.apellido_paterno }} {{ f.datos.apellido_materno }}</strong><span class="sub">{{ f.datos.nombres }}</span></td>
+          <td>{{ f.datos.dni|default:"—" }}</td><td><span class="badge-seccion">{{ f.seccion_texto }}</span></td><td>{{ f.datos.apoderado_nombre|default:"—" }}</td>
+          <td>{% if f.accion == "Nuevo" %}<span class="chip ok">Nuevo</span>{% else %}<span class="chip info">Actualizar</span>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

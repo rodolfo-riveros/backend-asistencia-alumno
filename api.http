@@ -1,0 +1,103 @@
+### Colección de pruebas de la API (VS Code: extensión "REST Client" → "Send Request")
+### Cambia @host por la IP de tu PC para probar desde otro dispositivo.
+
+@host = http://127.0.0.1:8001/api/v1
+
+### Estado del servidor
+GET {{host}}/health/
+
+### Datos de la I.E. para la pantalla de login (sin token)
+GET {{host}}/institucion/
+
+### Login (Marisol Quispe, tutora de 3.º A y 3.º B)
+# @name login
+POST {{host}}/auth/login/
+Content-Type: application/json
+
+{"email": "m.quispe@ie-ejemplo.edu.pe", "password": "Demo2026!"}
+
+###
+@token = {{login.response.body.access}}
+@refresh = {{login.response.body.refresh}}
+
+### Perfil
+GET {{host}}/me/
+Authorization: Bearer {{token}}
+
+### Mis secciones (hoy)
+# @name hoy
+GET {{host}}/movil/hoy/
+Authorization: Bearer {{token}}
+
+###
+@seccion = {{hoy.response.body.tarjetas[1].seccion_id}}
+
+### Nómina para modo offline (repite con If-None-Match para ver el 304)
+GET {{host}}/movil/nomina/
+Authorization: Bearer {{token}}
+
+### Pase de lista de un día con datos
+GET {{host}}/secciones/{{seccion}}/sesion/?fecha=2026-10-30
+Authorization: Bearer {{token}}
+
+### Enviar marcas (solo se aceptan en día lectivo y con la fecha de hoy)
+# Reemplaza matricula_id por uno de la respuesta anterior y "fecha" por la fecha de hoy.
+POST {{host}}/asistencia/lote/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "marcas": [
+    {
+      "uuid_cliente": "{{$guid}}",
+      "matricula_id": 1,
+      "seccion_id": {{seccion}},
+      "fecha": "2026-11-02",
+      "estado": "P",
+      "metodo": "MANUAL",
+      "marcado_en": "{{$datetime iso8601}}"
+    }
+  ]
+}
+
+### Escanear un QR (usa el texto de un QR de .\qr_prueba)
+POST {{host}}/asistencia/escanear/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"codigo": "AE1.codigo-que-no-existe-000", "modo": "SECCION", "seccion_id": {{seccion}}}
+
+### Guardar lista
+POST {{host}}/secciones/{{seccion}}/sesion/cerrar/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{}
+
+### Justificar una falta (registro_id de la lista o del historial)
+POST {{host}}/registros/1/justificar/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"motivo": "SALUD", "detalle": "Cita médica"}
+
+### Buscar estudiantes (sin tildes)
+GET {{host}}/estudiantes/?q=flores
+Authorization: Bearer {{token}}
+
+### Historial del mes (usa un id del buscador)
+GET {{host}}/estudiantes/1/historial/?mes=2026-10
+Authorization: Bearer {{token}}
+
+### Renovar token
+POST {{host}}/auth/refresh/
+Content-Type: application/json
+
+{"refresh": "{{refresh}}"}
+
+### Cerrar sesión
+POST {{host}}/auth/logout/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"refresh": "{{refresh}}"}

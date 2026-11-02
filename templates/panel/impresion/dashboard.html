@@ -1,0 +1,33 @@
+{% extends "panel/impresion/base.html" %}
+{% load panel %}
+{% block titulo %}Asistencia del día{% endblock %}
+{% block barra %}Asistencia del día · {{ fecha_texto }}{% endblock %}
+{% block encabezado %}Asistencia del día{% if turno %} · turno {{ turno|lower }}{% endif %}{% endblock %}
+{% block derecha %}{{ fecha_texto }}<br>Generado a las {{ actualizado }}{% endblock %}
+{% block cuerpo %}
+<div class="kpis">
+  <div class="kpi"><b>{{ r.porcentaje|pct }}</b><span>Asistencia · {{ r.registrados }} de {{ r.total }}</span></div>
+  <div class="kpi"><b>{{ r.presentes }}</b><span>Presentes</span></div>
+  <div class="kpi"><b>{{ r.tardes }}</b><span>Tardes</span></div>
+  <div class="kpi"><b>{{ r.faltas }}</b><span>Faltas</span></div>
+  <div class="kpi"><b>{{ r.justificados }}</b><span>Justificados</span></div>
+  <div class="kpi"><b>{{ r.sin_registrar }}</b><span>Sin registrar</span></div>
+</div>
+<table>
+  <thead><tr><th>Sección</th><th>Tutor(a)</th><th class="c">Registro</th><th class="c">P</th><th class="c">T</th><th class="c">F</th><th class="c">J</th><th>Estado</th><th>Aún sin registrar</th></tr></thead>
+  <tbody>
+  {% for x in r.secciones %}
+    <tr>
+      <td><b>{{ x.seccion.nombre_corto }}</b> · {{ x.seccion.grado.nivel }}</td>
+      <td>{{ x.seccion.tutor.nombre_completo|default:"—" }}</td>
+      <td class="c">{{ x.registrados }}/{{ x.total }}</td>
+      <td class="c">{{ x.p }}</td><td class="c">{{ x.t }}</td><td class="c">{{ x.f }}</td><td class="c">{{ x.j }}</td>
+      <td>{% if x.estado == "COMPLETA" %}<span class="chip ok">Completa</span>{% elif x.estado == "EN_CURSO" %}<span class="chip aviso">En curso</span>{% else %}<span class="chip error">Sin iniciar</span>{% endif %}</td>
+      <td style="font-size:10px">{{ x.pendientes|slice:":6"|join:", " }}{% if x.pendientes|length > 6 %} +{{ x.pendientes|length|add:"-6" }}{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="pie">% = (presente + tarde + justificado) ÷ registrados. Por grado:
+  {% for g in grados %}{{ g.nombre }} {{ g.texto }}{% if not forloop.last %} · {% endif %}{% endfor %}</p>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "panel/base.html" %}
+{% load panel %}
+{% block titulo %}Configuración{% endblock %}
+{% block contenido %}
+<header class="encabezado">
+  <div class="encabezado-texto">
+    <span class="contexto">Institución, logo, reglas, turnos, años escolares, niveles y grados</span>
+    <h1 class="titulo">Configuración</h1>
+  </div>
+  <div class="acciones">
+    <a class="btn" href="{% url 'panel:niveles' %}">{% icono "secciones" 16 %}Niveles y grados</a>
+    {% if "panel.calendario" in permisos %}<a class="btn" href="{% url 'panel:calendario' %}">{% icono "calendario" 16 %}Calendario</a>{% endif %}
+    {% if "panel.usuarios" in permisos %}<a class="btn" href="{% url 'panel:usuarios' %}">{% icono "usuarios" 16 %}Usuarios y roles</a>{% endif %}
+  </div>
+</header>
+
+<div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+<div class="rejilla">
+  <div class="tarjeta">
+    <div class="tarjeta-cab"><h2>Institución educativa</h2></div>
+    <form method="post" enctype="multipart/form-data" class="formulario" novalidate>
+      {% csrf_token %}<input type="hidden" name="accion" value="institucion">
+      {% with form=inst_form %}{% include "panel/parciales/form_generico.html" %}{% endwith %}
+      <div class="ancho imagenes-actuales">
+        {% if institucion.logo %}<figure><img src="{% url 'logo_institucion' %}?v={{ institucion.version_imagenes }}" alt="Logo actual"><figcaption>Logo actual</figcaption></figure>{% endif %}
+        {% if institucion.imagen_portada %}<figure><img src="{% url 'portada_institucion' %}?v={{ institucion.version_imagenes }}" alt="Portada actual" style="width:160px"><figcaption>Portada actual</figcaption></figure>{% endif %}
+      </div>
+      <div class="botones-form"><button class="btn primario" type="submit">Guardar</button></div>
+    </form>
+  </div>
+
+  <div class="tarjeta">
+    <div class="tarjeta-cab"><h2>Reglas de asistencia</h2></div>
+    <form method="post" class="formulario" novalidate>
+      {% csrf_token %}<input type="hidden" name="accion" value="reglas">
+      {% if conf_form.non_field_errors %}<div class="errores-form ancho">{{ conf_form.non_field_errors }}</div>{% endif %}
+      {% campo conf_form.modo_asistencia ancho=True ayuda="«Diaria»: el tutor pasa lista al ingreso. «Por bloque»: además, los docentes de área por cada clase." %}
+      {% campo conf_form.auto_falta_al_cierre ancho=True %}
+      {% campo conf_form.umbral_faltas %}{% campo conf_form.umbral_tardanzas %}
+      <div class="botones-form"><button class="btn primario" type="submit">Guardar</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="rejilla">
+  {% for t, form in turnos %}
+  <div class="tarjeta">
+    <div class="tarjeta-cab"><h2>Turno {{ t|lower }}</h2><span class="nota">Tarde desde las {{ t.tarde_desde|time:"G:i" }}</span></div>
+    <form method="post" class="formulario" novalidate>
+      {% csrf_token %}<input type="hidden" name="accion" value="turno"><input type="hidden" name="turno_id" value="{{ t.pk }}">
+      {% include "panel/parciales/form_generico.html" %}
+      <div class="botones-form"><button class="btn primario" type="submit">Guardar</button></div>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="rejilla">
+  <div class="tarjeta tabla-tarjeta">
+    <div class="tarjeta-cab"><h2>Años escolares</h2></div>
+    <table class="tabla">
+      <thead><tr><th>Año</th><th>Inicio</th><th>Fin</th><th>Estado</th></tr></thead>
+      <tbody>
+      {% for a in anios %}
+        <tr>
+          <td><strong>{{ a.anio }}</strong></td><td>{{ a.fecha_inicio|date:"d/m/Y" }}</td><td>{{ a.fecha_fin|date:"d/m/Y" }}</td>
+          <td>{% if a.activo %}<span class="chip ok">Activo</span>{% else %}
+            <form method="post" class="inline" onsubmit="return confirm('¿Activar {{ a.anio }}? El panel y la app pasarán a usar este año.')">{% csrf_token %}<input type="hidden" name="accion" value="activar_anio"><input type="hidden" name="anio_id" value="{{ a.pk }}"><button class="btn chico" type="submit">Activar</button></form>
+          {% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="4" class="vacio">No hay años escolares.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="tarjeta">
+    <div class="tarjeta-cab"><h2>Nuevo año escolar</h2></div>
+    <form method="post" class="formulario" novalidate>
+      {% csrf_token %}<input type="hidden" name="accion" value="anio">
+      {% with form=anio_form %}{% include "panel/parciales/form_generico.html" %}{% endwith %}
+      <div class="botones-form"><button class="btn primario" type="submit">Crear año</button></div>
+    </form>
+  </div>
+</div>
+</div>
+{% endblock %}

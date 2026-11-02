@@ -1,0 +1,68 @@
+{% extends "panel/base.html" %}
+{% load panel %}
+{% block titulo %}Cursos y horarios{% endblock %}
+{% block contenido %}
+<header class="encabezado">
+  <div class="encabezado-texto">
+    <span class="contexto">Catálogo de áreas de primaria y horario semanal por sección</span>
+    <h1 class="titulo">Cursos y horarios</h1>
+  </div>
+</header>
+
+<div class="rejilla">
+  <div class="tarjeta tabla-tarjeta" x-data="{ editando: null }">
+    <div class="tarjeta-cab"><h2>Cursos / áreas</h2><span class="nota">{{ cursos|length }} en el catálogo</span></div>
+    <div class="tabla-scroll">
+      <table class="tabla">
+        <thead><tr><th>Curso</th><th>Asignaciones</th><th>Estado</th><th class="derecha"></th></tr></thead>
+        <tbody>
+        {% for c in cursos %}
+          <tr>
+            <td>
+              <strong x-show="editando !== {{ c.pk }}">{{ c.nombre }}</strong>
+              <form x-cloak x-show="editando === {{ c.pk }}" method="post" class="filtros">
+                {% csrf_token %}
+                <input type="hidden" name="curso_id" value="{{ c.pk }}">
+                <input type="text" name="nombre" value="{{ c.nombre }}" maxlength="60" required aria-label="Nombre del curso">
+                <label class="campo-check" style="min-height:auto;display:flex;gap:6px;font-size:13px"><input type="checkbox" name="activo" {% if c.activo %}checked{% endif %}> Activo</label>
+                <button class="btn chico primario" type="submit">Guardar</button>
+              </form>
+            </td>
+            <td>{{ c.n_asignaciones }}</td>
+            <td>{% if c.activo %}<span class="chip ok">Activo</span>{% else %}<span class="chip">Inactivo</span>{% endif %}</td>
+            <td class="derecha"><button type="button" class="btn chico" @click="editando = editando === {{ c.pk }} ? null : {{ c.pk }}">Editar</button></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <form method="post" class="formulario" style="padding:8px 20px 12px" novalidate>
+      {% csrf_token %}
+      {% campo form.nombre %}
+      <input type="hidden" name="activo" value="on">
+      <div class="campo"><span class="label">&nbsp;</span><button class="btn primario" style="height:52px" type="submit">{% icono "mas" 16 %}Agregar curso</button></div>
+    </form>
+  </div>
+
+  <div class="tarjeta tabla-tarjeta">
+    <div class="tarjeta-cab"><h2>Horarios por sección</h2><span class="nota">L–V × bloques</span></div>
+    <div class="tabla-scroll">
+      <table class="tabla">
+        <thead><tr><th>Sección</th><th>Turno</th><th>Bloques</th><th class="derecha"></th></tr></thead>
+        <tbody>
+        {% for s in secciones %}
+          <tr>
+            <td><strong>{{ s.nombre_largo }}</strong></td>
+            <td>{{ s.turno }}</td>
+            <td>{% if s.n_bloques %}{{ s.n_bloques }}{% else %}<span class="chip">Sin horario</span>{% endif %}</td>
+            <td class="derecha"><a class="btn chico" href="{% url 'panel:horario' s.pk %}">Ver horario</a></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="vacio">No hay secciones en el año activo.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

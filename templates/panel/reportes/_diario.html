@@ -1,0 +1,34 @@
+{% load panel %}
+<section class="rejilla-kpi">
+  <div class="kpi"><span class="kpi-titulo" style="color:var(--p-fg)">Presentes</span><span class="kpi-valor">{{ conteo.P }}</span></div>
+  <div class="kpi"><span class="kpi-titulo" style="color:var(--t-fg)">Tardes</span><span class="kpi-valor">{{ conteo.T }}</span></div>
+  <div class="kpi"><span class="kpi-titulo" style="color:var(--f-fg)">Faltas</span><span class="kpi-valor">{{ conteo.F }}</span></div>
+  <div class="kpi"><span class="kpi-titulo" style="color:var(--j-fg)">Justificados</span><span class="kpi-valor">{{ conteo.J }}</span></div>
+  <div class="kpi punteado"><span class="kpi-titulo">Sin registrar</span><span class="kpi-valor">{{ sin_registrar }}</span></div>
+</section>
+<div class="tarjeta tabla-tarjeta">
+  <div class="tarjeta-cab"><h2>{{ fecha_texto }}</h2>{% if seccion %}<span class="nota">Tutor(a): {{ seccion.tutor.nombre_completo|default:"sin asignar" }}</span>{% endif %}</div>
+  <div class="tabla-scroll">
+    <table class="tabla">
+      <thead><tr><th>Estudiante</th><th>Estado</th><th>Hora</th><th>Método</th><th>Justificación</th></tr></thead>
+      <tbody>
+      {% for f in filas_diario %}
+        <tr>
+          <td><span class="persona"><span class="avatar">{{ f.matricula.estudiante.iniciales }}</span><span><strong>{{ f.matricula.estudiante.apellidos }}</strong><span class="sub">{{ f.matricula.estudiante.nombres }}</span></span></span></td>
+          <td>
+            {% if f.registro %}
+              {% with e=f.registro.estado %}<span class="chip {% if e == 'P' %}p{% elif e == 'T' %}t{% elif e == 'F' %}f{% else %}j{% endif %}">{{ f.registro.get_estado_display }}</span>{% endwith %}
+              {% if f.registro.estado_original %}<span class="sub">antes: {{ f.registro.get_estado_original_display }}</span>{% endif %}
+            {% else %}<span class="chip">Sin registrar</span>{% endif %}
+          </td>
+          <td>{% if f.registro %}{{ f.registro.marcado_en|time:"G:i" }}{% if f.registro.hora_corregida %} <span class="sub" style="display:inline">(hora del servidor)</span>{% endif %}{% else %}—{% endif %}</td>
+          <td>{% if f.registro %}{{ f.registro.get_metodo_display }}{% else %}—{% endif %}</td>
+          <td>{% if f.justificacion %}<strong>{{ f.justificacion.get_motivo_display }}</strong>{% if f.justificacion.detalle %}<span class="sub">{{ f.justificacion.detalle }}</span>{% endif %}{% if f.justificacion.foto %}<span class="sub">con constancia</span>{% endif %}{% else %}—{% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="vacio">Elige una sección.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,66 @@
+{% extends "panel/base.html" %}
+{% load panel %}
+{% block titulo %}{% if rol %}Rol {{ rol.nombre }}{% else %}Nuevo rol{% endif %}{% endblock %}
+{% block contenido %}
+<header class="encabezado">
+  <div class="encabezado-texto">
+    <span class="contexto"><a href="{% url 'panel:usuarios' %}">Usuarios y roles</a> · <a href="{% url 'panel:roles' %}">Roles y permisos</a></span>
+    <h1 class="titulo">{% if rol %}{{ rol.nombre }}{% else %}Nuevo rol{% endif %}</h1>
+  </div>
+  {% if rol and not rol.es_sistema %}
+  <form method="post" class="inline" onsubmit="return confirm('¿Eliminar el rol «{{ rol.nombre }}»?')">
+    {% csrf_token %}<input type="hidden" name="accion" value="eliminar">
+    <button class="btn peligro" type="submit">Eliminar rol</button>
+  </form>
+  {% endif %}
+</header>
+
+<form method="post" novalidate style="display:flex;flex-direction:column;gap:16px" x-data>
+  {% csrf_token %}
+  <div class="tarjeta" style="max-width:900px">
+    <div class="formulario">
+      {% if form.non_field_errors %}<div class="errores-form ancho">{{ form.non_field_errors }}</div>{% endif %}
+      {% campo form.nombre %}{% campo form.descripcion %}
+    </div>
+  </div>
+
+  <div class="tarjeta">
+    <div class="tarjeta-cab">
+      <h2>Permisos</h2>
+      {% if rol.es_admin %}<span class="chip ok">El administrador siempre tiene todos los permisos</span>
+      {% else %}
+      <span class="acciones">
+        <button type="button" class="btn chico" @click="$root.querySelectorAll('.permiso input').forEach(i => i.checked = true)">Marcar todos</button>
+        <button type="button" class="btn chico" @click="$root.querySelectorAll('.permiso input').forEach(i => i.checked = false)">Quitar todos</button>
+      </span>
+      {% endif %}
+    </div>
+    <div class="grupos-permisos">
+      {% for grupo, permisos in grupos %}
+      <fieldset class="grupo-permisos" {% if rol.es_admin %}disabled{% endif %}>
+        <legend>{{ grupo }}</legend>
+        {% for codigo, nombre, descripcion in permisos %}
+        <label class="permiso">
+          <input type="checkbox" name="permisos" value="{{ codigo }}" {% if codigo in marcados %}checked{% endif %}>
+          <span><strong>{{ nombre }}</strong><span class="sub">{{ descripcion }}</span></span>
+        </label>
+        {% endfor %}
+      </fieldset>
+      {% endfor %}
+    </div>
+    <div class="botones-form">
+      <a class="btn" href="{% url 'panel:roles' %}">Cancelar</a>
+      <button class="btn primario" type="submit">Guardar rol</button>
+    </div>
+  </div>
+</form>
+
+{% if usuarios %}
+<div class="tarjeta" style="max-width:900px">
+  <div class="tarjeta-cab"><h2>Usuarios con este rol</h2><a class="btn chico" href="{% url 'panel:usuario_nuevo' %}?rol={{ rol.codigo }}">{% icono "mas" 14 %}Agregar</a></div>
+  <ul class="lista-simple">
+    {% for u in usuarios %}<li><a href="{% url 'panel:usuario' u.pk %}">{{ u.apellidos }}, {{ u.nombres }}</a><span class="nota">{{ u.email }}</span></li>{% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% endblock %}

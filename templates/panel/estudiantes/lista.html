@@ -1,0 +1,35 @@
+{% extends "panel/base.html" %}
+{% load panel %}
+{% block titulo %}Estudiantes{% endblock %}
+{% block contenido %}
+<header class="encabezado">
+  <div class="encabezado-texto">
+    <span class="contexto">Año escolar {{ anio_activo.anio }}{% if sin_matricula %} · {{ sin_matricula }} estudiante{{ sin_matricula|pluralize }} activo{{ sin_matricula|pluralize }} sin matrícula este año{% endif %}</span>
+    <h1 class="titulo">Estudiantes</h1>
+  </div>
+  <div class="acciones">
+    <a class="btn" href="{% url 'panel:importar' %}">{% icono "importar" 16 %}Importar Excel</a>
+    <a class="btn primario" href="{% url 'panel:estudiante_nuevo' %}{% if seccion %}?seccion={{ seccion }}{% endif %}">{% icono "mas" 16 %}Nuevo estudiante</a>
+  </div>
+</header>
+
+<form class="filtros" hx-get="{% url 'panel:estudiantes' %}" hx-target="#tabla-estudiantes" hx-push-url="true"
+      hx-trigger="input changed delay:300ms from:input[name=q], change from:select, submit" hx-indicator="#cargando">
+  <input type="search" name="q" value="{{ q }}" placeholder="Buscar por apellidos, nombres, código o DNI" aria-label="Buscar">
+  <select name="grado" aria-label="Grado">
+    <option value="">Todos los grados</option>
+    {% for g in grados %}<option value="{{ g.pk }}" {% if grado == g.pk|stringformat:'s' %}selected{% endif %}>{{ g.nombre }}</option>{% endfor %}
+  </select>
+  <select name="seccion" aria-label="Sección">
+    <option value="">Todas las secciones</option>
+    {% for s in secciones %}<option value="{{ s.pk }}" {% if seccion == s.pk|stringformat:'s' %}selected{% endif %}>{{ s.nombre_corto }}</option>{% endfor %}
+  </select>
+  <select name="estado" aria-label="Estado">
+    <option value="">Todos los estados</option>
+    {% for v, t in estados %}<option value="{{ v }}" {% if estado == v %}selected{% endif %}>{{ t }}</option>{% endfor %}
+  </select>
+  <span id="cargando" class="htmx-indicator nota">Buscando…</span>
+</form>
+
+<div id="tabla-estudiantes">{% include "panel/estudiantes/_tabla.html" %}</div>
+{% endblock %}

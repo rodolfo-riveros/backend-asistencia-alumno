@@ -1,0 +1,69 @@
+{% extends "panel/base.html" %}
+{% load panel %}
+{% block titulo %}{{ docente.nombre_completo }}{% endblock %}
+{% block contenido %}
+<header class="encabezado">
+  <div class="encabezado-texto">
+    <span class="contexto"><a href="{% url 'panel:docentes' %}">Docentes y asignaciones</a> · {{ docente.email }}</span>
+    <h1 class="titulo">{{ docente.nombre_completo }}</h1>
+  </div>
+  <div class="acciones">
+    {% if docente.debe_cambiar_password %}<span class="chip aviso">Debe cambiar su contraseña</span>{% endif %}
+    {% if docente.esta_bloqueado %}<span class="chip error">Bloqueado por intentos fallidos</span>{% endif %}
+    <form method="post" class="inline" onsubmit="return confirm('Se generará una contraseña temporal nueva. ¿Continuar?')">
+      {% csrf_token %}<input type="hidden" name="accion" value="restablecer">
+      <button class="btn" type="submit">Restablecer contraseña</button>
+    </form>
+  </div>
+</header>
+
+<div class="rejilla">
+  <div class="tarjeta">
+    <div class="tarjeta-cab"><h2>Tutoría (asistencia diaria)</h2></div>
+    <ul class="lista-simple">
+      {% for s in tutorias %}
+      <li>
+        <span><strong>{{ s.nombre_largo }}</strong> · {{ s.turno }}</span>
+        <form method="post" class="inline">{% csrf_token %}<input type="hidden" name="accion" value="quitar_tutoria"><input type="hidden" name="seccion_id" value="{{ s.pk }}"><button class="enlace-boton peligro" type="submit">Quitar</button></form>
+      </li>
+      {% empty %}
+      <li><span class="nota">No es tutor(a) de ninguna sección.</span></li>
+      {% endfor %}
+    </ul>
+    <form method="post" class="formulario" novalidate>
+      {% csrf_token %}<input type="hidden" name="accion" value="tutoria">
+      {% campo tut_form.seccion %}
+      <div class="campo"><span class="label">&nbsp;</span><button class="btn" style="height:52px" type="submit">Asignar tutoría</button></div>
+    </form>
+  </div>
+
+  <div class="tarjeta">
+    <div class="tarjeta-cab"><h2>Cursos asignados</h2><span class="nota">{{ asignaciones|length }}</span></div>
+    <ul class="lista-simple">
+      {% for a in asignaciones %}
+      <li>
+        <span><span class="badge-seccion">{{ a.seccion.nombre_corto }}</span> {{ a.curso }}</span>
+        <form method="post" class="inline">{% csrf_token %}<input type="hidden" name="accion" value="quitar"><input type="hidden" name="asignacion_id" value="{{ a.pk }}"><button class="enlace-boton peligro" type="submit">Quitar</button></form>
+      </li>
+      {% empty %}
+      <li><span class="nota">Sin cursos asignados.</span></li>
+      {% endfor %}
+    </ul>
+    <form method="post" class="formulario" novalidate>
+      {% csrf_token %}<input type="hidden" name="accion" value="asignar">
+      {% if asig_form.non_field_errors %}<div class="errores-form ancho">{% for e in asig_form.non_field_errors %}{{ e }}{% endfor %}</div>{% endif %}
+      {% campo asig_form.seccion %}{% campo asig_form.curso %}
+      <div class="botones-form"><button class="btn primario" type="submit">{% icono "mas" 16 %}Asignar curso</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="tarjeta" style="max-width:820px">
+  <div class="tarjeta-cab"><h2>Datos</h2></div>
+  <form method="post" class="formulario" novalidate>
+    {% csrf_token %}<input type="hidden" name="accion" value="datos">
+    {% with form=datos_form %}{% include "panel/parciales/form_generico.html" %}{% endwith %}
+    <div class="botones-form"><button class="btn primario" type="submit">Guardar datos</button></div>
+  </form>
+</div>
+{% endblock %}

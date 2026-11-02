@@ -1,0 +1,4 @@
+{% load panel %}
+{% if form.non_field_errors %}<div class="errores-form">{% for e in form.non_field_errors %}{{ e }}<br>{% endfor %}</div>{% endif %}
+{% for field in form.hidden_fields %}{{ field }}{% endfor %}
+{% for field in form.visible_fields %}{% campo field %}{% endfor %}

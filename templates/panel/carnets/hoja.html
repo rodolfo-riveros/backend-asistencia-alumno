@@ -1,0 +1,93 @@
+{% load static panel %}<!DOCTYPE html>
+<html lang="es-PE">
+<head>
+<meta charset="utf-8">
+<title>Carnets · {{ titulo }}</title>
+<link rel="stylesheet" href="{% static 'panel/css/tokens.css' %}">
+<style>
+  @page { size: A4 portrait; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #E9E7E0; font-family: var(--font-body); color: var(--ink); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .barra { position: sticky; top: 0; z-index: 2; background: var(--ink); color: #F4F3EE; padding: 12px 20px; display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; font-size: 14px; }
+  .barra a, .barra button { height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #3A4A70; background: transparent; color: #FFFFFF; font: inherit; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+  .barra .principal { background: #F4F3EE; color: var(--ink); border-color: #F4F3EE; }
+  .aviso { background: #FBEEDB; color: #8A4A05; padding: 10px 20px; font-size: 14px; font-weight: 600; }
+  .hoja { width: 210mm; height: 297mm; margin: 16px auto; background: #FFFFFF; padding: 12mm 14mm 10mm; display: flex; flex-direction: column; gap: 6mm; page-break-after: always; break-after: page; overflow: hidden; }
+  .hoja:last-child { page-break-after: auto; break-after: auto; }
+  .cab { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid var(--border); padding-bottom: 3.5mm; }
+  .cab .sup { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); display: block; }
+  .cab .tit { font-family: var(--font-title); font-size: 22px; font-weight: 700; }
+  .cab .der { font-size: 12px; color: var(--text-muted); }
+  .rejilla { display: grid; grid-template-columns: 85.6mm 85.6mm; grid-auto-rows: 54mm; gap: 5mm 6mm; justify-content: center; }
+  .carnet { width: 85.6mm; height: 54mm; border: 1px dashed var(--border-dashed); border-radius: 3.5mm; overflow: hidden; display: flex; flex-direction: column; }
+  .carnet .banda { height: 9mm; background: var(--ink); color: #F4F3EE; padding: 0 3.5mm; display: flex; align-items: center; justify-content: space-between; gap: 2mm; }
+  .carnet .banda .ie { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 2mm; }
+  .carnet .banda img { height: 6mm; width: auto; border-radius: 1mm; background: #FFFFFF; }
+  .carnet .banda .anio { font-size: 11px; font-weight: 600; color: #C9CEDA; }
+  .carnet .cuerpo { flex: 1; padding: 3mm 3.5mm; display: flex; gap: 3mm; align-items: center; min-height: 0; }
+  .carnet .foto { width: 19mm; height: 24mm; border-radius: 2mm; background: var(--neutral-chip); display: flex; align-items: center; justify-content: center; font-family: var(--font-title); font-size: 22px; font-weight: 700; color: #6B7280; flex: none; }
+  .carnet .datos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .8mm; }
+  .carnet .rol { font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); }
+  .carnet .ape { font-size: 13.5px; font-weight: 700; line-height: 1.2; }
+  .carnet .nom { font-size: 12.5px; line-height: 1.2; }
+  .carnet .sec { margin-top: 1.5mm; align-self: flex-start; height: 5.6mm; padding: 0 2mm; border-radius: 1.5mm; background: var(--bg); font-size: 10.5px; font-weight: 700; display: inline-flex; align-items: center; }
+  .carnet .qr { width: 25mm; height: 25mm; flex: none; }
+  .carnet .qr svg { width: 100%; height: 100%; display: block; }
+  .pie { margin-top: auto; font-size: 11px; color: var(--text-muted); }
+  @media print {
+    body { background: #FFFFFF; }
+    .barra, .aviso { display: none; }
+    .hoja { margin: 0; }
+  }
+</style>
+</head>
+<body>
+{% if not modo_pdf %}
+<div class="barra">
+  <span><strong>{{ titulo }}</strong> · {{ hojas|length }} hoja{{ hojas|length|pluralize }}</span>
+  <span style="display:flex;gap:8px;flex-wrap:wrap">
+    {% if volver_url.1 %}<a href="{% url volver_url.0 volver_url.1 %}">‹ Volver</a>{% else %}<a href="{% url volver_url.0 %}">‹ Volver</a>{% endif %}
+    {% if pdf_disponible %}<a href="?{{ query }}&formato=pdf">Descargar PDF</a>{% endif %}
+    <button class="principal" type="button" onclick="window.print()">{% icono "imprimir" 16 %}Imprimir / Guardar como PDF</button>
+  </span>
+</div>
+{% if sin_carnet %}<div class="aviso">{{ sin_carnet|length }} estudiante{{ sin_carnet|length|pluralize }} sin carnet activo no aparece{{ sin_carnet|length|pluralize:"n" }} en la hoja: {% for e in sin_carnet %}{{ e.apellidos }}{% if not forloop.last %}, {% endif %}{% endfor %}.</div>{% endif %}
+{% endif %}
+
+{% for hoja in hojas %}
+<section class="hoja">
+  <div class="cab">
+    <div>
+      <span class="sup">Carnets de asistencia · hoja {{ forloop.counter }} de {{ hojas|length }}</span>
+      <span class="tit">{{ titulo }}</span>
+    </div>
+    <span class="der">Recortar por la línea punteada · 85,6 × 54 mm</span>
+  </div>
+  <div class="rejilla">
+    {% for c in hoja %}
+    <div class="carnet">
+      <div class="banda">
+        <span class="ie">{% if logo %}<img src="{{ logo }}" alt="">{% endif %}{{ institucion.nombre }}</span>
+        <span class="anio">{{ anio.anio }}</span>
+      </div>
+      <div class="cuerpo">
+        <div class="foto">{{ c.iniciales }}</div>
+        <div class="datos">
+          <span class="rol">Estudiante</span>
+          <span class="ape">{{ c.apellidos }}</span>
+          <span class="nom">{{ c.nombres }}</span>
+          <span class="sec">{{ c.seccion }}</span>
+        </div>
+        <div class="qr">{{ c.qr }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  <p class="pie">El QR contiene solo un código interno del estudiante (sin DNI ni datos personales). Si se pierde el carnet, regenera el código desde el panel y el anterior deja de funcionar.</p>
+</section>
+{% empty %}
+<section class="hoja"><p>No hay estudiantes con carnet activo.</p></section>
+{% endfor %}
+</body>
+</html>

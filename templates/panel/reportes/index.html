@@ -1,0 +1,60 @@
+{% extends "panel/base.html" %}
+{% load panel %}
+{% block titulo %}Reportes{% endblock %}
+{% block contenido %}
+<header class="encabezado">
+  <div class="encabezado-texto">
+    <span class="contexto">Reportes · {{ subtitulo }}</span>
+    <h1 class="titulo">{{ titulo }}</h1>
+  </div>
+  <div class="acciones">
+    <a class="btn" href="?{{ query }}&tab={{ tab }}&formato=xlsx">{% icono "descargar" 16 %}Exportar Excel</a>
+    <a class="btn primario" href="?{{ query }}&tab={{ tab }}&formato=imprimir" target="_blank">{% icono "descargar" 16 %}Exportar PDF</a>
+  </div>
+</header>
+
+<nav class="pestanas" role="tablist" aria-label="Tipo de reporte">
+  {% for clave, texto in pestanas %}
+  <a role="tab" aria-selected="{% if tab == clave %}true{% else %}false{% endif %}"
+     href="?tab={{ clave }}&mes={{ mes }}{% if grado %}&grado={{ grado.pk }}{% endif %}{% if seccion %}&seccion={{ seccion.pk }}{% endif %}">{{ texto }}</a>
+  {% endfor %}
+</nav>
+
+<form class="filtros-reporte" method="get">
+  <input type="hidden" name="tab" value="{{ tab }}">
+  {% if tab == "diario" %}
+  <label>Fecha<input type="date" name="fecha" value="{{ fecha|date:'Y-m-d' }}" onchange="this.form.submit()"></label>
+  {% else %}
+  <label>Mes
+    <select name="mes" onchange="this.form.submit()">
+      {% for v, t in meses %}<option value="{{ v }}" {% if v == mes %}selected{% endif %}>{{ t }}</option>{% endfor %}
+    </select>
+  </label>
+  {% endif %}
+  <label>Grado
+    <select name="grado" onchange="this.form.seccion.value='';this.form.submit()">
+      <option value="">{% if tab == "diario" or tab == "mensual" %}Elige…{% else %}Todos{% endif %}</option>
+      {% for g in grados %}<option value="{{ g.pk }}" {% if grado.pk == g.pk %}selected{% endif %}>{{ g.nivel }} · {{ g.corto }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Sección
+    <select name="seccion" onchange="this.form.submit()">
+      {% if tab != "diario" and tab != "mensual" %}<option value="">Todas</option>{% endif %}
+      {% for s in secciones %}{% if not grado or s.grado_id == grado.pk %}
+      <option value="{{ s.pk }}" {% if seccion.pk == s.pk %}selected{% endif %}>{{ s.nombre_corto }} · {{ s.turno }}</option>
+      {% endif %}{% endfor %}
+    </select>
+  </label>
+  {% if tab != "diario" %}
+  <label>Estudiante<input type="search" name="q" value="{{ q }}" placeholder="Todos" onchange="this.form.submit()"></label>
+  {% endif %}
+</form>
+
+{% if tab == "diario" %}
+  {% include "panel/reportes/_diario.html" %}
+{% elif tab == "mensual" %}
+  {% include "panel/reportes/_mensual.html" %}
+{% else %}
+  {% include "panel/reportes/_lista.html" %}
+{% endif %}
+{% endblock %}

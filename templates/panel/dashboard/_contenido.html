@@ -1,0 +1,127 @@
+{% load panel %}
+<div style="display:flex;flex-direction:column;gap:20px">
+<section class="rejilla-kpi" aria-label="Resumen">
+  <div class="kpi oscuro">
+    <span class="kpi-titulo">Asistencia general</span>
+    <span class="kpi-valor">{{ r.porcentaje|pct }}</span>
+    <span class="kpi-nota">{{ r.registrados }} de {{ r.total }} registrados</span>
+  </div>
+  <div class="kpi">
+    <span class="kpi-titulo kpi-icono" style="color:var(--p-fg)">{% icono "check" 14 "currentColor" 2.6 %}Presentes</span>
+    <span class="kpi-valor">{{ r.presentes }}</span>
+    <span class="kpi-nota">{{ pct_presentes }} del total</span>
+  </div>
+  <div class="kpi">
+    <span class="kpi-titulo kpi-icono" style="color:var(--t-fg)">{% icono "horarios" 14 "currentColor" 2.6 %}Tardes</span>
+    <span class="kpi-valor">{{ r.tardes }}</span>
+    <span class="kpi-nota">{% if limite_puntual %}después de {{ limite_puntual }}{% else %}tardanzas{% endif %}</span>
+  </div>
+  <div class="kpi">
+    <span class="kpi-titulo kpi-icono" style="color:var(--f-fg)">{% icono "cerrar" 14 "currentColor" 2.6 %}Faltas</span>
+    <span class="kpi-valor">{{ r.faltas }}</span>
+    <span class="kpi-nota">{{ pct_faltas }} del total</span>
+  </div>
+  <div class="kpi">
+    <span class="kpi-titulo kpi-icono" style="color:var(--j-fg)">{% icono "documento" 14 "currentColor" 2.4 %}Justificados</span>
+    <span class="kpi-valor">{{ r.justificados }}</span>
+    <span class="kpi-nota">con motivo registrado</span>
+  </div>
+  <div class="kpi punteado">
+    <span class="kpi-titulo kpi-icono">{% icono "alerta" 14 "currentColor" 2.4 %}Sin registrar</span>
+    <span class="kpi-valor">{{ r.sin_registrar }}</span>
+    <span class="kpi-nota">en {{ r.secciones_incompletas }} sección{{ r.secciones_incompletas|pluralize:"es" }}</span>
+  </div>
+</section>
+
+<section class="rejilla">
+  <div class="tarjeta">
+    <div class="tarjeta-cab"><h2>Asistencia por grado</h2><span class="nota">% (P + T + J) ÷ registrados</span></div>
+    {% for g in grados %}
+    <div class="barra-grado">
+      <span style="font-weight:600">{{ g.nombre }}</span>
+      <div class="barra-fondo"><div class="barra-relleno{% if g.bajo %} baja{% endif %}" style="width:{{ g.ancho|floatformat:"1u" }}%"></div></div>
+      <span style="font-weight:700;text-align:right">{{ g.texto }}</span>
+    </div>
+    {% empty %}
+    <div class="vacio">Sin grados.</div>
+    {% endfor %}
+    <span class="nota">Eje de 80 % a 100 % · en ámbar los grados bajo 90 %</span>
+  </div>
+
+  <div class="tarjeta">
+    <div class="tarjeta-cab">
+      <h2>Últimos 15 días hábiles</h2>
+      <span class="leyenda-grafico"><span><i style="background:var(--ink)"></i>Asistencia</span><span><i style="background:var(--t-dot)"></i>Tardanzas</span></span>
+    </div>
+    {% if grafico.asistencia %}
+    <svg viewBox="0 0 560 240" width="100%" height="240" role="img" aria-label="Asistencia y tardanzas de los últimos {{ dias|length }} días hábiles">
+      <g stroke="#ECEAE2" stroke-width="1">
+        <line x1="40" y1="20" x2="550" y2="20"/><line x1="40" y1="80" x2="550" y2="80"/>
+        <line x1="40" y1="140" x2="550" y2="140"/><line x1="40" y1="200" x2="550" y2="200"/>
+      </g>
+      <g font-size="11" fill="#4B5565" font-family="Figtree, sans-serif">
+        <text x="0" y="24">100 %</text><text x="6" y="84">95 %</text><text x="6" y="144">90 %</text><text x="6" y="204">85 %</text>
+        {% for x, texto in grafico.etiquetas %}<text x="{{ x|floatformat:"0u" }}" y="226">{{ texto }}</text>{% endfor %}
+      </g>
+      <polyline points="{{ grafico.asistencia }}" fill="none" stroke="#14213D" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <polyline points="{{ grafico.tardanzas }}" fill="none" stroke="#B45F06" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="4 4"/>
+      {% if grafico.ultimo %}<circle cx="{{ grafico.ultimo.0|floatformat:"1u" }}" cy="{{ grafico.ultimo.1|floatformat:"1u" }}" r="5" fill="#14213D"/>{% endif %}
+    </svg>
+    <span class="nota">Tardanzas en escala propia (0–10 %)</span>
+    {% else %}
+    <div class="vacio">Aún no hay días con asistencia registrada.</div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="rejilla">
+  <div class="tarjeta tabla-tarjeta">
+    <div class="tarjeta-cab"><h2>Por sección</h2><a href="{% url 'panel:reportes' %}?tab=diario&fecha={{ fecha|date:'Y-m-d' }}" style="font-size:14px;font-weight:700">Ver reportes</a></div>
+    <div class="tabla-scroll">
+      <table class="tabla" style="min-width:560px">
+        <thead><tr><th>Sección</th><th>Registro</th><th class="num">P</th><th class="num">T</th><th class="num">F</th><th class="num">J</th><th>Estado</th></tr></thead>
+        <tbody>
+        {% for x in r.secciones %}
+          <tr class="fila-link" onclick="location.href='{% url 'panel:reportes' %}?tab=diario&seccion={{ x.seccion.pk }}&fecha={{ fecha|date:'Y-m-d' }}'">
+            <td><strong>{{ x.seccion.nombre_corto }} · {{ x.seccion.grado.nivel }}</strong><span class="sub">{{ x.seccion.tutor.nombre_completo|default:"Sin tutor" }}</span></td>
+            <td style="width:150px"><div class="registro"><div class="barra-fondo delgada"><div class="barra-relleno" style="width:{{ x.avance }}%"></div></div><span class="nota" style="font-size:12px">{{ x.registrados }}/{{ x.total }}</span></div></td>
+            <td class="num">{{ x.p }}</td><td class="num">{{ x.t }}</td><td class="num">{{ x.f }}</td><td class="num">{{ x.j }}</td>
+            <td>
+              {% if x.estado == "COMPLETA" %}<span class="chip ok">Completa</span>
+              {% elif x.estado == "EN_CURSO" %}<span class="chip aviso">En curso</span>
+              {% else %}<span class="chip error">Sin iniciar</span>{% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="vacio">No hay secciones en el año activo.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tarjeta">
+    <div class="tarjeta-cab"><h2>Aún sin registrar</h2><span class="nota">{{ r.sin_registrar }} estudiante{{ r.sin_registrar|pluralize }}</span></div>
+    {% for x in pendientes %}
+    <div class="pendiente">
+      <div class="tarjeta-cab"><strong style="font-size:14px">{{ x.seccion.nombre_corto }} · {{ x.seccion.grado.nivel }}</strong><span class="nota" style="font-size:12px">{{ x.seccion.tutor.nombre_completo|default:"Sin tutor" }}{% if x.estado == "SIN_INICIAR" %} · sin iniciar{% endif %}</span></div>
+      <div class="nombres">
+        {% for n in x.pendientes|slice:":3" %}<span class="chip">{{ n }}</span>{% endfor %}
+        {% if x.pendientes|length > 3 %}<span class="chip punteado">+{{ x.pendientes|length|add:"-3" }}</span>{% endif %}
+      </div>
+    </div>
+    {% empty %}
+    <div class="vacio">{% if r.total %}Todas las secciones registraron asistencia.{% else %}Sin estudiantes.{% endif %}</div>
+    {% endfor %}
+    {% if es_hoy and pendientes %}
+    <form method="post" action="{% url 'panel:recordar' %}">
+      {% csrf_token %}<input type="hidden" name="turno" value="{{ turno|default:'' }}">
+      <button class="btn primario" style="width:100%" type="submit" {% if proximo_recordatorio %}disabled title="Podrás enviar otro en {{ proximo_recordatorio }} min"{% endif %}>
+        {% if proximo_recordatorio %}Recordatorio enviado · otro en {{ proximo_recordatorio }} min{% else %}Recordar a los docentes{% endif %}
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+{% if es_hoy %}<script>document.getElementById('actualizado') && (document.getElementById('actualizado').textContent = '{{ actualizado }}');</script>{% endif %}
+</div>

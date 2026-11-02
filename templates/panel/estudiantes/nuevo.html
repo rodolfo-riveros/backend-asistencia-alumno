@@ -1,0 +1,28 @@
+{% extends "panel/base.html" %}
+{% load panel %}
+{% block titulo %}Nuevo estudiante{% endblock %}
+{% block contenido %}
+<header class="encabezado">
+  <div class="encabezado-texto">
+    <span class="contexto"><a href="{% url 'panel:estudiantes' %}">Estudiantes</a></span>
+    <h1 class="titulo">Nuevo estudiante</h1>
+  </div>
+</header>
+<form method="post" novalidate style="display:flex;flex-direction:column;gap:16px;max-width:900px">
+  {% csrf_token %}
+  <div class="tarjeta">
+    <div class="tarjeta-cab"><h2>Datos y matrícula</h2></div>
+    <div class="formulario">{% include "panel/parciales/form_generico.html" %}</div>
+  </div>
+  <div class="tarjeta">
+    <div class="tarjeta-cab"><h2>Apoderado principal</h2><span class="nota">Para contactar ante faltas</span></div>
+    <div class="formulario">
+      {% campo apoderado_form.nombre %}{% campo apoderado_form.parentesco %}{% campo apoderado_form.celular %}
+    </div>
+  </div>
+  <div class="botones-form">
+    <a class="btn" href="{% url 'panel:estudiantes' %}">Cancelar</a>
+    <button class="btn primario" type="submit">Registrar y generar carnet</button>
+  </div>
+</form>
+{% endblock %}

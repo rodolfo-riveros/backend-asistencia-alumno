@@ -1,0 +1,31 @@
+{% load panel %}
+<div class="tarjeta tabla-tarjeta">
+  <div class="tarjeta-cab"><h2>{{ pagina.paginator.count }} estudiante{{ pagina.paginator.count|pluralize }}</h2></div>
+  <div class="tabla-scroll">
+    <table class="tabla">
+      <thead><tr><th>Estudiante</th><th>Código</th><th>Sección</th><th>Matrícula</th><th>Carnet QR</th></tr></thead>
+      <tbody>
+      {% for m in pagina %}
+        <tr class="fila-link" onclick="location.href='{% url 'panel:estudiante' m.estudiante_id %}'">
+          <td><span class="persona"><span class="avatar">{{ m.estudiante.iniciales }}</span><span><a href="{% url 'panel:estudiante' m.estudiante_id %}"><strong>{{ m.estudiante.apellidos }}</strong></a><span class="sub">{{ m.estudiante.nombres }}</span></span></span></td>
+          <td>{{ m.estudiante.codigo_estudiante }}</td>
+          <td><span class="badge-seccion">{{ m.seccion.nombre_corto }}</span> <span class="sub" style="display:inline">{{ m.seccion.turno }}</span></td>
+          <td><span class="chip {{ m.estado|clase_estado }}">{{ m.get_estado_display }}</span></td>
+          <td>{% if m.estudiante_id in con_carnet %}<span class="chip ok">Activo</span>{% else %}<span class="chip">Sin carnet</span>{% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="vacio">No se encontraron estudiantes con estos filtros.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if pagina.paginator.num_pages > 1 %}
+  <div class="paginacion">
+    <span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+    <span class="acciones">
+      {% if pagina.has_previous %}<a class="btn chico" hx-get="?{{ query }}&pagina={{ pagina.previous_page_number }}" hx-target="#tabla-estudiantes" hx-push-url="true" href="?{{ query }}&pagina={{ pagina.previous_page_number }}">‹ Anterior</a>{% endif %}
+      {% if pagina.has_next %}<a class="btn chico" hx-get="?{{ query }}&pagina={{ pagina.next_page_number }}" hx-target="#tabla-estudiantes" hx-push-url="true" href="?{{ query }}&pagina={{ pagina.next_page_number }}">Siguiente ›</a>{% endif %}
+    </span>
+  </div>
+  {% endif %}
+</div>

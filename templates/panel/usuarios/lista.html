@@ -1,0 +1,60 @@
+{% extends "panel/base.html" %}
+{% load panel %}
+{% block titulo %}Usuarios{% endblock %}
+{% block contenido %}
+<header class="encabezado">
+  <div class="encabezado-texto">
+    <span class="contexto">{{ usuarios|length }} usuario{{ usuarios|length|pluralize }}</span>
+    <h1 class="titulo">Usuarios y roles</h1>
+  </div>
+  <div class="acciones">
+    <a class="btn" href="{% url 'panel:roles' %}">{% icono "escudo" 16 %}Roles y permisos</a>
+    <a class="btn primario" href="{% url 'panel:usuario_nuevo' %}">{% icono "mas" 16 %}Nuevo usuario</a>
+  </div>
+</header>
+
+<nav class="pestanas" aria-label="Filtrar por rol">
+  <a href="?" aria-selected="{% if not rol %}true{% else %}false{% endif %}">Todos</a>
+  {% for r in roles %}<a href="?rol={{ r.codigo }}" aria-selected="{% if rol == r.codigo %}true{% else %}false{% endif %}">{{ r.nombre }} · {{ r.n }}</a>{% endfor %}
+</nav>
+
+<form class="filtros" method="get">
+  {% if rol %}<input type="hidden" name="rol" value="{{ rol }}">{% endif %}
+  <input type="search" name="q" value="{{ q }}" placeholder="Buscar por nombre o correo" aria-label="Buscar usuario">
+  <button class="btn" type="submit">{% icono "buscar" 16 %}Buscar</button>
+</form>
+
+<div class="tarjeta tabla-tarjeta">
+  <div class="tabla-scroll">
+    <table class="tabla">
+      <thead><tr><th>Usuario</th><th>Rol</th><th>Último ingreso</th><th>Estado</th><th class="derecha">Acciones</th></tr></thead>
+      <tbody>
+      {% for u in usuarios %}
+        <tr>
+          <td><span class="persona"><span class="avatar">{{ u.iniciales }}</span><span><a href="{% url 'panel:usuario' u.pk %}"><strong>{{ u.apellidos }}, {{ u.nombres }}</strong></a><span class="sub">{{ u.email }}</span></span></span></td>
+          <td><a href="{% url 'panel:rol' u.rol.pk %}" class="chip info" style="text-decoration:none">{{ u.rol.nombre }}</a></td>
+          <td>{{ u.last_login|date:"j M Y, G:i"|default:"Nunca" }}</td>
+          <td>
+            {% if not u.is_active %}<span class="chip">Inactivo</span>
+            {% elif u.esta_bloqueado %}<span class="chip error">Bloqueado</span>
+            {% elif u.debe_cambiar_password %}<span class="chip aviso">Clave temporal</span>
+            {% else %}<span class="chip ok">Activo</span>{% endif %}
+          </td>
+          <td class="derecha">
+            <a class="btn chico" href="{% url 'panel:usuario' u.pk %}">Editar</a>
+            {% if u != request.user %}
+            <form method="post" class="inline">{% csrf_token %}<input type="hidden" name="usuario_id" value="{{ u.pk }}">
+              {% if u.is_active %}<button class="btn chico peligro" name="accion" value="desactivar" type="submit">Desactivar</button>
+              {% else %}<button class="btn chico" name="accion" value="activar" type="submit">Activar</button>{% endif %}
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="vacio">No hay usuarios con estos filtros.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

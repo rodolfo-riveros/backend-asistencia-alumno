@@ -1,0 +1,60 @@
+{% load panel %}
+{% if not matriz %}
+<div class="tarjeta"><div class="vacio">Elige una sección para ver el resumen del mes.</div></div>
+{% else %}
+<div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
+  <div class="tarjeta" style="flex:999 1 640px;padding:16px 0 12px">
+    <div class="leyenda" style="padding:0 18px">
+      <strong style="color:var(--ink)">{{ matriz.filas|length }} estudiante{{ matriz.filas|length|pluralize }} · {{ matriz.dias|length }} días hábiles</strong>
+      <span><i class="letra p">P</i>Presente</span><span><i class="letra t">T</i>Tarde</span>
+      <span><i class="letra f">F</i>Falta</span><span><i class="letra j">J</i>Justificado</span>
+    </div>
+    <div class="tabla-scroll" style="padding:0 15px">
+      <table class="matriz">
+        <thead><tr>
+          <th class="nombre">Estudiante</th>
+          {% for letra, dia in dias_cab %}<th><small>{{ letra }}</small><br>{{ dia }}</th>{% endfor %}
+          <th style="color:var(--p-fg)">P</th><th style="color:var(--t-fg)">T</th><th style="color:var(--f-fg)">F</th><th style="color:var(--j-fg)">J</th>
+          <th style="text-align:right;padding-right:4px">%</th>
+        </tr></thead>
+        <tbody>
+        {% for x in matriz.filas %}
+          <tr>
+            <td class="nombre"><a href="{% url 'panel:estudiante' x.matricula.estudiante_id %}" style="text-decoration:none">{{ x.nombre }}</a></td>
+            {% for e in x.celdas %}<td class="celda {{ e|celda }}">{{ e|default:"" }}</td>{% endfor %}
+            <td class="total">{{ x.p }}</td><td class="total">{{ x.t }}</td><td class="total">{{ x.f }}</td><td class="total">{{ x.j }}</td>
+            <td class="porc{% if x.porcentaje is not None and x.porcentaje < 90 %} bajo{% endif %}">{{ x.porcentaje|pct }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="{{ matriz.dias|length|add:6 }}" class="vacio">No hay estudiantes con estos filtros.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <span class="nota" style="padding:0 18px">% = (presente + tarde + justificado) ÷ días hábiles registrados</span>
+  </div>
+
+  <div class="lateral" style="flex:1 1 280px">
+    <div class="tarjeta">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="width:32px;height:32px;border-radius:10px;background:var(--f-bg);color:var(--f-fg);display:flex;align-items:center;justify-content:center">{% icono "alerta" 16 %}</span>
+        <h2>Alerta de riesgo</h2>
+      </div>
+      <p class="nota" style="margin:0">{{ matriz.umbral_faltas }} o más faltas, o {{ matriz.umbral_tardanzas }} o más tardanzas en el mes.</p>
+      {% for x in matriz.riesgo %}
+      <div class="riesgo-fila">
+        <span style="flex:1;display:flex;flex-direction:column"><strong style="font-size:14px">{{ x.nombre }}</strong><span class="nota" style="font-size:12px">{{ x.f }} falta{{ x.f|pluralize }} · {{ x.t }} tardanza{{ x.t|pluralize }}</span></span>
+        <span class="riesgo-valor">{% if x.f >= matriz.umbral_faltas %}{{ x.f }} F{% else %}{{ x.t }} T{% endif %}</span>
+      </div>
+      {% empty %}
+      <div class="riesgo-fila"><span class="nota">Nadie en riesgo este mes.</span></div>
+      {% endfor %}
+    </div>
+    <div class="kpi oscuro" style="border-radius:18px;padding:18px">
+      <span class="kpi-titulo" style="font-weight:600">Promedio de la sección</span>
+      <span class="kpi-valor" style="font-size:36px">{{ matriz.promedio|pct }}</span>
+      <span class="kpi-nota" style="font-size:13px">{{ mes_texto }}</span>
+    </div>
+  </div>
+</div>
+{% endif %}

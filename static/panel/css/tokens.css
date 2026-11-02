@@ -1,0 +1,47 @@
+/* Tokens del diseño (sección 4 de la especificación). No cambiar valores sin actualizar el diseño. */
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("../fonts/BricolageGrotesque.woff2") format("woff2");
+  font-weight: 200 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Figtree";
+  src: url("../fonts/Figtree.woff2") format("woff2");
+  font-weight: 300 900;
+  font-display: swap;
+}
+
+:root {
+  --ink: #14213D;
+  --ink-deep: #0B1427;
+  --ink-hover: #26345A;
+  --bg: #F4F3EE;
+  --surface: #FFFFFF;
+  --text-muted: #4B5565;
+  --text-subtle: #5A6478;
+  --text-on-btn: #3F4859;
+  --border: #E4E2DA;
+  --border-input: #D6D3C8;
+  --border-dashed: #B9B5A8;
+  --row-line: #ECEAE2;
+  --neutral-chip: #ECEAE2;
+  --disabled: #9AA1AE;
+  --sidebar-text: #D5DAE5;
+  --sidebar-muted: #C9CEDA;
+  --sidebar-line: #2B3A5E;
+
+  /* Estados P · T · F · J */
+  --p-solid: #1E7A4C; --p-bg: #E3F1E8; --p-fg: #17603B;
+  --t-solid: #A35505; --t-dot: #B45F06; --t-bg: #FBEEDB; --t-fg: #8A4A05;
+  --f-solid: #B42318; --f-bg: #FBE4E1; --f-fg: #9A1F15;
+  --j-solid: #2453A6; --j-bg: #E2EAF7; --j-fg: #1E4590;
+
+  --font-title: "Bricolage Grotesque", system-ui, sans-serif;
+  --font-body: "Figtree", system-ui, sans-serif;
+
+  --r-input: 12px;
+  --r-btn: 14px;
+  --r-card: 18px;
+  --r-state: 10px;
+}

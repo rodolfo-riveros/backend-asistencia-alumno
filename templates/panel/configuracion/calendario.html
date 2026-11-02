@@ -1,0 +1,40 @@
+{% extends "panel/base.html" %}
+{% load panel %}
+{% block titulo %}Calendario{% endblock %}
+{% block contenido %}
+<header class="encabezado">
+  <div class="encabezado-texto">
+    <span class="contexto"><a href="{% url 'panel:configuracion' %}">Configuración</a> · Año escolar {{ anio.anio }} ({{ anio.fecha_inicio|date:"j M" }} – {{ anio.fecha_fin|date:"j M" }})</span>
+    <h1 class="titulo">Calendario · días no lectivos</h1>
+  </div>
+</header>
+
+<div class="rejilla">
+  <div class="tarjeta">
+    <div class="tarjeta-cab"><h2>Agregar feriado o vacaciones</h2></div>
+    <p class="nota" style="margin:0">Estos días no cuentan como hábiles: no se pasa lista ni se marcan faltas.</p>
+    <form method="post" class="formulario" novalidate>
+      {% csrf_token %}
+      {% include "panel/parciales/form_generico.html" %}
+      <div class="botones-form"><button class="btn primario" type="submit">Agregar</button></div>
+    </form>
+  </div>
+
+  <div class="tarjeta">
+    <div class="tarjeta-cab"><h2>Días registrados</h2><span class="nota">{{ total }} días hábiles sin clases</span></div>
+    {% for mes, dias in meses.items %}
+      <span class="etiqueta">{{ dias.0.fecha|date:"F" }}</span>
+      <ul class="lista-simple">
+        {% for d in dias %}
+        <li>
+          <span><strong>{{ d.fecha|date:"D j" }}</strong> · {{ d.descripcion|default:d.get_motivo_display }} <span class="chip {% if d.motivo == 'FERIADO' %}error{% elif d.motivo == 'VACACIONES' %}info{% endif %}">{{ d.get_motivo_display }}</span></span>
+          <form method="post" class="inline">{% csrf_token %}<input type="hidden" name="accion" value="quitar"><input type="hidden" name="dia_id" value="{{ d.pk }}"><button class="enlace-boton peligro" type="submit">Quitar</button></form>
+        </li>
+        {% endfor %}
+      </ul>
+    {% empty %}
+      <div class="vacio">Aún no hay feriados ni vacaciones registrados.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

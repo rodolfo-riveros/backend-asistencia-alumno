@@ -1,0 +1,44 @@
+{% extends "panel/base.html" %}
+{% load panel %}
+{% block titulo %}Grados y secciones{% endblock %}
+{% block contenido %}
+<header class="encabezado">
+  <div class="encabezado-texto">
+    <span class="contexto">Año escolar {{ anio.anio|default:"—" }} · {{ total }} secciones</span>
+    <h1 class="titulo">Grados y secciones</h1>
+  </div>
+  <div class="acciones"><a class="btn primario" href="{% url 'panel:seccion_nueva' %}">{% icono "mas" 16 %}Nueva sección</a></div>
+</header>
+
+<div class="tarjeta tabla-tarjeta">
+  {% if grados %}
+  <div class="tabla-scroll">
+    <table class="tabla">
+      <thead><tr><th>Sección</th><th>Turno</th><th>Tutor(a)</th><th>Aula</th><th>Matriculados</th><th class="derecha">Acciones</th></tr></thead>
+      <tbody>
+      {% for grado, secciones in grados.items %}
+        {% for s in secciones %}
+        <tr>
+          <td><span class="persona"><span class="badge-seccion">{{ s.grado.corto }} {{ s.letra }}</span><span><strong>{{ s.nombre_largo }}</strong><span class="sub">{{ s.grado.nivel }}</span></span></span></td>
+          <td>{{ s.turno }}</td>
+          <td>{% if s.tutor %}<a href="{% url 'panel:docente' s.tutor.pk %}">{{ s.tutor.nombre_completo }}</a>{% else %}<span class="chip error">Sin tutor</span>{% endif %}</td>
+          <td>{{ s.aula|default:"—" }}</td>
+          <td>
+            <a href="{% url 'panel:estudiantes' %}?seccion={{ s.pk }}">{{ s.matriculados }} / {{ s.capacidad }}</a>
+            {% if s.matriculados > s.capacidad %}<span class="chip aviso">Sobre capacidad</span>{% endif %}
+          </td>
+          <td class="derecha">
+            <a class="btn chico" href="{% url 'panel:horario' s.pk %}">Horario</a>
+            <a class="btn chico" href="{% url 'panel:seccion_editar' s.pk %}">Editar</a>
+          </td>
+        </tr>
+        {% endfor %}
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="vacio">Aún no hay secciones en el año activo. <a href="{% url 'panel:seccion_nueva' %}">Crea la primera</a>.</div>
+  {% endif %}
+</div>
+{% endblock %}

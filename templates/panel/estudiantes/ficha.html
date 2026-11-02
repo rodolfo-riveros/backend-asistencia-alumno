@@ -1,0 +1,117 @@
+{% extends "panel/base.html" %}
+{% load panel %}
+{% block titulo %}{{ est.nombre_completo }}{% endblock %}
+{% block contenido %}
+<header class="encabezado">
+  <div class="encabezado-texto">
+    <span class="contexto"><a href="{% url 'panel:estudiantes' %}">Estudiantes</a> · Código {{ est.codigo_estudiante }}</span>
+    <div class="persona" style="gap:14px">
+      <span class="avatar grande">{{ est.iniciales }}</span>
+      <div>
+        <h1 class="titulo">{{ est.apellidos }}, {{ est.nombres }}</h1>
+        <span class="contexto">{% if matricula %}{{ matricula.seccion.nombre_largo }} · {{ matricula.seccion.grado.nivel }} · Turno {{ matricula.seccion.turno|lower }}{% else %}Sin matrícula en {{ anio_activo.anio }}{% endif %}</span>
+      </div>
+    </div>
+  </div>
+  <div class="acciones">
+    {% if resumen.indicadores.alerta_riesgo %}<span class="chip error">Alerta de riesgo este mes</span>{% endif %}
+    {% if matricula %}<span class="chip {{ matricula.estado|clase_estado }}">Matrícula {{ matricula.get_estado_display|lower }}</span>{% endif %}
+  </div>
+</header>
+
+{% if resumen %}
+<section class="rejilla-3" aria-label="Asistencia del mes">
+  <div class="kpi oscuro"><span class="kpi-titulo">Asistencia · {{ mes }}</span><span class="kpi-valor">{{ resumen.indicadores.porcentaje_texto }}</span><span class="kpi-nota">(P + T + J) ÷ días con registro</span></div>
+  <div class="kpi"><span class="kpi-titulo" style="color:var(--p-fg)">Presentes</span><span class="kpi-valor">{{ resumen.indicadores.presentes }}</span></div>
+  <div class="kpi"><span class="kpi-titulo" style="color:var(--t-fg)">Tardanzas</span><span class="kpi-valor">{{ resumen.indicadores.tardanzas }}</span></div>
+  <div class="kpi"><span class="kpi-titulo" style="color:var(--f-fg)">Faltas</span><span class="kpi-valor">{{ resumen.indicadores.faltas }}</span><span class="kpi-nota">{{ resumen.indicadores.justificados }} justificadas</span></div>
+</section>
+{% endif %}
+
+<div class="rejilla">
+  <div class="tarjeta">
+    <div class="tarjeta-cab"><h2>Carnet QR</h2>{% if carnet %}<span class="chip {{ carnet.estado|clase_estado }}">{{ carnet.get_estado_display }}</span>{% endif %}</div>
+    {% if carnet %}
+    <div class="datos">
+      <div class="dato"><span class="etiqueta">Emitido</span>{{ carnet.emitido_en|date:"j \d\e F \d\e Y, G:i" }}</div>
+      <div class="dato"><span class="etiqueta">Versiones</span>{{ historial_carnets }}</div>
+    </div>
+    {% else %}
+    <p class="nota" style="margin:0">Aún no tiene carnet.</p>
+    {% endif %}
+    <div class="acciones">
+      {% if carnet.estado == 'ACTIVO' %}<a class="btn" href="{% url 'panel:carnet_estudiante' est.pk %}" target="_blank">{% icono "imprimir" 16 %}Imprimir carnet</a>{% endif %}
+      <form method="post" class="inline" onsubmit="return confirm('El QR actual dejará de funcionar. ¿Regenerar?')">
+        {% csrf_token %}<input type="hidden" name="accion" value="regenerar_carnet">
+        <button class="btn" type="submit">{% if carnet.estado == 'ACTIVO' %}Regenerar (perdió el carnet){% else %}Emitir carnet nuevo{% endif %}</button>
+      </form>
+      {% if carnet.estado == 'ACTIVO' %}
+      <form method="post" class="inline" onsubmit="return confirm('El QR dejará de registrar asistencia. ¿Dar de baja?')">
+        {% csrf_token %}<input type="hidden" name="accion" value="baja_carnet">
+        <button class="btn peligro" type="submit">Dar de baja</button>
+      </form>
+      {% endif %}
+    </div>
+    <p class="nota" style="margin:0">El QR contiene solo un código interno (sin DNI ni nombre).</p>
+  </div>
+
+  <div class="tarjeta">
+    <div class="tarjeta-cab"><h2>Apoderados</h2></div>
+    <ul class="lista-simple">
+      {% for a in apoderados %}
+      <li>
+        <span><strong>{{ a.nombre }}</strong> · {{ a.parentesco|default:"—" }}<span class="sub" style="display:block;font-size:13px;color:var(--text-muted)">{{ a.celular|default:"sin celular" }}{% if a.es_principal %} · <strong>principal</strong>{% endif %}</span></span>
+        <span class="acciones">
+          {% if not a.es_principal %}<form method="post" class="inline">{% csrf_token %}<input type="hidden" name="accion" value="principal"><input type="hidden" name="apoderado_id" value="{{ a.pk }}"><button class="enlace-boton" type="submit">Hacer principal</button></form>{% endif %}
+          <form method="post" class="inline" onsubmit="return confirm('¿Quitar apoderado?')">{% csrf_token %}<input type="hidden" name="accion" value="quitar_apoderado"><input type="hidden" name="apoderado_id" value="{{ a.pk }}"><button class="enlace-boton peligro" type="submit">Quitar</button></form>
+        </span>
+      </li>
+      {% empty %}
+      <li><span class="nota">Sin apoderados registrados.</span></li>
+      {% endfor %}
+    </ul>
+    <details {% if apo_form.errors %}open{% endif %}>
+      <summary class="enlace-boton" style="list-style:none">+ Agregar apoderado</summary>
+      <form method="post" class="formulario" style="margin-top:12px" novalidate>
+        {% csrf_token %}<input type="hidden" name="accion" value="apoderado">
+        {% campo apo_form.nombre %}{% campo apo_form.parentesco %}{% campo apo_form.celular %}{% campo apo_form.es_principal %}
+        <div class="botones-form"><button class="btn primario" type="submit">Agregar</button></div>
+      </form>
+    </details>
+  </div>
+</div>
+
+<div class="tarjeta" style="max-width:900px">
+  <div class="tarjeta-cab"><h2>Datos del estudiante</h2></div>
+  <form method="post" class="formulario" novalidate>
+    {% csrf_token %}<input type="hidden" name="accion" value="datos">
+    {% include "panel/parciales/form_generico.html" %}
+    <div class="botones-form"><button class="btn primario" type="submit">Guardar</button></div>
+  </form>
+</div>
+
+{% if matricula.estado == 'ACTIVA' %}
+<div class="tarjeta" style="max-width:900px">
+  <div class="tarjeta-cab"><h2>Retiro o traslado</h2></div>
+  <p class="nota" style="margin:0">Deja de aparecer en las listas y su carnet se da de baja. Su historial se conserva.</p>
+  <form method="post" class="formulario" novalidate onsubmit="return confirm('¿Confirmas la baja de la matrícula?')">
+    {% csrf_token %}<input type="hidden" name="accion" value="baja_matricula">
+    {% campo baja_form.estado %}{% campo baja_form.fecha_baja %}
+    <div class="botones-form"><button class="btn peligro" type="submit">Registrar baja</button></div>
+  </form>
+</div>
+{% elif matricula %}
+<div class="tarjeta" style="max-width:900px">
+  <p style="margin:0">Matrícula {{ matricula.get_estado_display|lower }} desde el {{ matricula.fecha_baja|date:"j \d\e F" }}. Para reincorporarlo, elige su sección en «Datos del estudiante» y guarda.</p>
+</div>
+{% endif %}
+
+{% if otras_matriculas %}
+<div class="tarjeta tabla-tarjeta" style="max-width:900px">
+  <div class="tarjeta-cab"><h2>Matrículas anteriores</h2></div>
+  <table class="tabla"><tbody>
+  {% for m in otras_matriculas %}<tr><td>{{ m.anio_escolar }}</td><td>{{ m.seccion.nombre_corto }}</td><td><span class="chip {{ m.estado|clase_estado }}">{{ m.get_estado_display }}</span></td></tr>{% endfor %}
+  </tbody></table>
+</div>
+{% endif %}
+{% endblock %}

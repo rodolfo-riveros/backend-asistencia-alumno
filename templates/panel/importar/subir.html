@@ -1,0 +1,37 @@
+{% extends "panel/base.html" %}
+{% load panel %}
+{% block titulo %}Importar estudiantes{% endblock %}
+{% block contenido %}
+<header class="encabezado">
+  <div class="encabezado-texto">
+    <span class="contexto">Año escolar {{ anio_activo.anio }}</span>
+    <h1 class="titulo">Importar estudiantes</h1>
+  </div>
+  <div class="acciones"><a class="btn" href="{% url 'panel:plantilla' %}">{% icono "descargar" 16 %}Descargar plantilla</a></div>
+</header>
+
+<div class="rejilla">
+  <div class="tarjeta">
+    <div class="tarjeta-cab"><h2>1. Sube el archivo</h2></div>
+    <form method="post" enctype="multipart/form-data" class="formulario" style="grid-template-columns:1fr" novalidate>
+      {% csrf_token %}
+      {% include "panel/parciales/form_generico.html" %}
+      <div class="botones-form" style="justify-content:flex-start"><button class="btn primario" type="submit">Ver vista previa</button></div>
+    </form>
+    <p class="nota" style="margin:0">Nada se guarda hasta que confirmes en la vista previa.</p>
+  </div>
+
+  <div class="tarjeta">
+    <div class="tarjeta-cab"><h2>Columnas</h2></div>
+    <p class="nota" style="margin:0">Se reconocen por el nombre del encabezado (también los de la nómina de SIAGIE). <strong>Obligatorias</strong> en negrita.</p>
+    <ul class="lista-simple">
+      <li><strong>codigo_estudiante</strong><span class="nota">Si ya existe, se actualiza</span></li>
+      <li><span>dni</span><span class="nota">8 dígitos</span></li>
+      <li><strong>apellido_paterno</strong> · <span>apellido_materno</span> · <strong>nombres</strong></li>
+      <li><span>sexo · fecha_nacimiento</span><span class="nota">M/F · dd/mm/aaaa</span></li>
+      <li><strong>grado · seccion</strong><span class="nota">3 · B (la sección debe existir)</span></li>
+      <li><span>apoderado_nombre · apoderado_parentesco · apoderado_celular</span></li>
+    </ul>
+  </div>
+</div>
+{% endblock %}

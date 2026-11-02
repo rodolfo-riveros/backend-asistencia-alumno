@@ -1,0 +1,30 @@
+{% extends "panel/base.html" %}
+{% load panel %}
+{% block titulo %}{% if seccion %}Editar {{ seccion.nombre_corto }}{% else %}Nueva sección{% endif %}{% endblock %}
+{% block contenido %}
+<header class="encabezado">
+  <div class="encabezado-texto">
+    <span class="contexto"><a href="{% url 'panel:secciones' %}">Grados y secciones</a> · Año {{ anio_activo.anio }}</span>
+    <h1 class="titulo">{% if seccion %}{{ seccion.nombre_largo }}{% else %}Nueva sección{% endif %}</h1>
+  </div>
+</header>
+<div class="tarjeta" style="max-width:820px">
+  <form method="post" class="formulario" novalidate>
+    {% csrf_token %}
+    {% include "panel/parciales/form_generico.html" %}
+    <div class="botones-form">
+      <a class="btn" href="{% url 'panel:secciones' %}">Cancelar</a>
+      <button class="btn primario" type="submit">Guardar</button>
+    </div>
+  </form>
+</div>
+{% if seccion %}
+<div class="tarjeta" style="max-width:820px">
+  <div class="tarjeta-cab"><h2>Eliminar sección</h2></div>
+  <p class="nota" style="margin:0">Solo se puede eliminar si no tiene estudiantes, horario ni asistencia registrada.</p>
+  <form method="post" action="{% url 'panel:seccion_eliminar' seccion.pk %}" onsubmit="return confirm('¿Eliminar {{ seccion.nombre_corto }}?')">
+    {% csrf_token %}<button class="btn peligro" type="submit">Eliminar {{ seccion.nombre_corto }}</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

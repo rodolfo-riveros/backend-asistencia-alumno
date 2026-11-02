@@ -1,0 +1,9 @@
+{% extends "panel/base.html" %}
+{% block titulo %}Sin permiso{% endblock %}
+{% block contenido %}
+<header class="encabezado"><div class="encabezado-texto"><h1 class="titulo">Sin permiso</h1></div></header>
+<div class="tarjeta">
+  <p style="margin:0">Tu rol ({{ request.user.rol.nombre }}) no tiene permiso para esta sección. Pide a quien administra los usuarios que lo habilite en <strong>Usuarios y roles</strong>.</p>
+  <div>{% if menu_items %}<a class="btn" href="{% url menu_items.0.2 %}">Ir a {{ menu_items.0.3 }}</a>{% endif %}</div>
+</div>
+{% endblock %}

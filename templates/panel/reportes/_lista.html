@@ -1,0 +1,26 @@
+{% load panel %}
+<div class="tarjeta tabla-tarjeta">
+  <div class="tarjeta-cab">
+    <h2>{% if tab == "alertas" %}{{ filas_lista|length }} estudiante{{ filas_lista|length|pluralize }} en riesgo{% else %}{{ filas_lista|length }} estudiante{{ filas_lista|length|pluralize }} · de menor a mayor %{% endif %}</h2>
+    <span class="nota">{% if tab == "alertas" %}{{ matriz.umbral_faltas }}+ faltas o {{ matriz.umbral_tardanzas }}+ tardanzas en el mes{% else %}% = (P + T + J) ÷ días registrados{% endif %}</span>
+  </div>
+  <div class="tabla-scroll">
+    <table class="tabla">
+      <thead><tr><th>Estudiante</th><th>Sección</th><th class="num">P</th><th class="num">T</th><th class="num">F</th><th class="num">J</th><th class="num">Días</th><th class="derecha">% asistencia</th></tr></thead>
+      <tbody>
+      {% for x in filas_lista %}
+        <tr class="fila-link" onclick="location.href='{% url 'panel:estudiante' x.matricula.estudiante_id %}'">
+          <td><strong>{{ x.nombre }}</strong></td>
+          <td><span class="badge-seccion">{{ x.matricula.seccion.nombre_corto }}</span></td>
+          <td class="num">{{ x.p }}</td><td class="num">{{ x.t }}</td>
+          <td class="num{% if x.f >= matriz.umbral_faltas %} bajo{% endif %}">{{ x.f }}</td><td class="num">{{ x.j }}</td>
+          <td class="num">{{ x.registrados }}</td>
+          <td class="derecha"><strong class="{% if x.porcentaje is not None and x.porcentaje < 90 %}bajo{% endif %}">{{ x.porcentaje|pct }}</strong></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="8" class="vacio">{% if tab == "alertas" %}Ningún estudiante supera los umbrales este mes.{% else %}No hay estudiantes con estos filtros.{% endif %}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>

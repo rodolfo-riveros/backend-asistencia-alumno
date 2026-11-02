@@ -1,0 +1,54 @@
+{% extends "panel/base.html" %}
+{% load panel %}
+{% block titulo %}Horario {{ seccion.nombre_corto }}{% endblock %}
+{% block contenido %}
+<header class="encabezado">
+  <div class="encabezado-texto">
+    <span class="contexto"><a href="{% url 'panel:cursos' %}">Cursos y horarios</a> · Turno {{ seccion.turno|lower }}</span>
+    <h1 class="titulo">Horario · {{ seccion.nombre_largo }}</h1>
+  </div>
+</header>
+
+<div class="tarjeta">
+  <div class="tarjeta-cab"><h2>Semana</h2><span class="nota">El sistema avisa si un docente queda en dos bloques a la vez</span></div>
+  {% if filas %}
+  <div class="tabla-scroll">
+    <div class="grilla-horario">
+      <div class="cab hora">Hora</div>
+      {% for n, dia in dias %}<div class="cab">{{ dia }}</div>{% endfor %}
+      {% for f in filas %}
+        <div class="hora">{{ f.inicio|time:"G:i" }}<br>{{ f.fin|time:"G:i" }}</div>
+        {% for celda in f.celdas %}
+          <div>
+            {% for b in celda %}
+            <div class="bloque">
+              <strong>{{ b.asignacion.curso }}</strong>
+              <span>{{ b.asignacion.docente.nombre_completo }}</span>
+              <form method="post" action="{% url 'panel:bloque_eliminar' b.pk %}" onsubmit="return confirm('¿Quitar este bloque?')">
+                {% csrf_token %}<button class="enlace-boton peligro" style="font-size:12px" type="submit">Quitar</button>
+              </form>
+            </div>
+            {% endfor %}
+          </div>
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+  <div class="vacio">Esta sección aún no tiene bloques de horario.</div>
+  {% endif %}
+</div>
+
+<div class="tarjeta">
+  <div class="tarjeta-cab"><h2>Agregar bloque</h2></div>
+  {% if sin_asignaciones %}
+    <p class="nota" style="margin:0">Primero asigna cursos a docentes en <a href="{% url 'panel:docentes' %}">Docentes y asignaciones</a>.</p>
+  {% else %}
+  <form method="post" class="formulario" novalidate>
+    {% csrf_token %}
+    {% include "panel/parciales/form_generico.html" %}
+    <div class="botones-form"><button class="btn primario" type="submit">{% icono "mas" 16 %}Agregar</button></div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

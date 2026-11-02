@@ -1,0 +1,32 @@
+{% extends "panel/base.html" %}
+{% load panel %}
+{% block titulo %}Roles y permisos{% endblock %}
+{% block contenido %}
+<header class="encabezado">
+  <div class="encabezado-texto">
+    <span class="contexto"><a href="{% url 'panel:usuarios' %}">Usuarios y roles</a></span>
+    <h1 class="titulo">Roles y permisos</h1>
+  </div>
+  <div class="acciones"><a class="btn primario" href="{% url 'panel:rol_nuevo' %}">{% icono "mas" 16 %}Nuevo rol</a></div>
+</header>
+
+<p class="nota" style="margin:0">Cada usuario tiene un rol. Lo que el rol permite se aplica al instante en el panel y en la app.</p>
+
+<div class="tarjeta tabla-tarjeta">
+  <div class="tabla-scroll">
+    <table class="tabla">
+      <thead><tr><th>Rol</th><th>Permisos</th><th>Usuarios</th><th class="derecha"></th></tr></thead>
+      <tbody>
+      {% for f in filas %}
+        <tr class="fila-link" onclick="location.href='{% url 'panel:rol' f.rol.pk %}'">
+          <td><strong>{{ f.rol.nombre }}</strong>{% if f.rol.es_sistema %} <span class="chip">Inicial</span>{% endif %}<span class="sub">{{ f.rol.descripcion }}</span></td>
+          <td>{% if f.rol.es_admin %}<span class="chip ok">Todos</span>{% else %}{{ f.total }} de {{ total_permisos }}{% endif %}</td>
+          <td><a href="{% url 'panel:usuarios' %}?rol={{ f.rol.codigo }}">{{ f.n }}</a></td>
+          <td class="derecha"><a class="btn chico" href="{% url 'panel:rol' f.rol.pk %}">Editar</a></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

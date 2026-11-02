@@ -1,0 +1,60 @@
+{% extends "panel/base.html" %}
+{% load panel %}
+{% block titulo %}Carnets QR{% endblock %}
+{% block contenido %}
+<header class="encabezado">
+  <div class="encabezado-texto">
+    <span class="contexto">Hoja A4 · 8 carnets por hoja · 85,6 × 54 mm</span>
+    <h1 class="titulo">Carnets QR</h1>
+  </div>
+</header>
+
+<div class="tarjeta tabla-tarjeta" x-data="{ logo: false }">
+  <div class="tarjeta-cab">
+    <h2>Por sección</h2>
+    {% if hay_logo %}
+    <label class="filtros" style="font-size:14px;font-weight:600;gap:6px"><input type="checkbox" x-model="logo" style="width:18px;height:18px;accent-color:var(--ink)"> Incluir logo de la I.E.</label>
+    {% else %}
+    <span class="nota">Sube el logo de la I.E. en <a href="{% url 'panel:configuracion' %}">Configuración</a> para incluirlo.</span>
+    {% endif %}
+  </div>
+  <div class="tabla-scroll">
+    <table class="tabla">
+      <thead><tr><th>Sección</th><th>Tutor(a)</th><th>Estudiantes</th><th>Con carnet</th><th>Hojas</th><th class="derecha"></th></tr></thead>
+      <tbody>
+      {% for f in filas %}
+        <tr>
+          <td><span class="persona"><span class="badge-seccion">{{ f.s.nombre_corto }}</span><span>{{ f.s.nombre_largo }}<span class="sub">{{ f.s.turno }}</span></span></span></td>
+          <td>{{ f.s.tutor.nombre_completo|default:"—" }}</td>
+          <td>{{ f.s.activos }}</td>
+          <td>
+            {{ f.s.con_carnet }}
+            {% if f.faltan %}
+            <form method="post" class="inline">{% csrf_token %}<input type="hidden" name="seccion_id" value="{{ f.s.pk }}"><button class="btn chico" type="submit">Emitir {{ f.faltan }} faltante{{ f.faltan|pluralize }}</button></form>
+            {% endif %}
+          </td>
+          <td>{{ f.hojas }}</td>
+          <td class="derecha">
+            {% if f.s.con_carnet %}
+            <a class="btn chico primario" target="_blank" :href="'{% url 'panel:carnets_seccion' f.s.pk %}' + (logo ? '?logo=1' : '')" href="{% url 'panel:carnets_seccion' f.s.pk %}">{% icono "imprimir" 14 %}Hoja A4</a>
+            {% if pdf %}<a class="btn chico" target="_blank" :href="'{% url 'panel:carnets_seccion' f.s.pk %}?formato=pdf' + (logo ? '&logo=1' : '')" href="{% url 'panel:carnets_seccion' f.s.pk %}?formato=pdf">PDF</a>{% endif %}
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" class="vacio">No hay secciones en el año activo.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="tarjeta">
+  <div class="tarjeta-cab"><h2>Cómo imprimir</h2></div>
+  <ul class="lista-simple">
+    <li>Abre la hoja A4 y presiona «Imprimir». Elige tamaño <strong>A4</strong>, márgenes <strong>Ninguno</strong> y escala <strong>100 %</strong>.</li>
+    <li>Para guardar el archivo, elige la impresora «Guardar como PDF».</li>
+    <li>Para un solo estudiante (carnet perdido), ábrelo desde su ficha en <a href="{% url 'panel:estudiantes' %}">Estudiantes</a>.</li>
+  </ul>
+</div>
+{% endblock %}

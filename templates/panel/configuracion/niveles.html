@@ -1,0 +1,51 @@
+{% extends "panel/base.html" %}
+{% load panel %}
+{% block titulo %}Niveles y grados{% endblock %}
+{% block contenido %}
+<header class="encabezado">
+  <div class="encabezado-texto">
+    <span class="contexto"><a href="{% url 'panel:configuracion' %}">Configuración</a></span>
+    <h1 class="titulo">Niveles y grados</h1>
+  </div>
+</header>
+<p class="nota" style="margin:0">Activa los niveles que atiende la I.E. Si hay más de uno activo, el panel muestra el nivel en los filtros.</p>
+
+<div class="rejilla">
+  {% for nivel, grados in niveles %}
+  <div class="tarjeta">
+    <div class="tarjeta-cab">
+      <h2>{{ nivel }}</h2>
+      <form method="post" class="inline">
+        {% csrf_token %}<input type="hidden" name="accion" value="nivel"><input type="hidden" name="nivel_id" value="{{ nivel.pk }}">
+        {% if nivel.activo %}<span class="chip ok">Activo</span> <button class="btn chico" name="activo" value="0" type="submit">Desactivar</button>
+        {% else %}<span class="chip">Inactivo</span> <button class="btn chico primario" name="activo" value="1" type="submit">Activar</button>{% endif %}
+      </form>
+    </div>
+    {% for g in grados %}
+    <form method="post" class="fila-grado">
+      {% csrf_token %}<input type="hidden" name="accion" value="editar_grado"><input type="hidden" name="grado_id" value="{{ g.pk }}">
+      <input type="hidden" name="nivel" value="{{ nivel.pk }}">
+      <input class="input chico" type="number" name="numero" value="{{ g.numero }}" min="0" max="20" aria-label="Número" style="width:72px">
+      <input class="input chico" type="text" name="nombre" value="{{ g.nombre }}" maxlength="30" aria-label="Nombre" style="flex:1">
+      <input class="input chico" type="number" name="orden" value="{{ g.orden }}" min="0" aria-label="Orden" style="width:72px">
+      <button class="btn chico" type="submit">Guardar</button>
+      {% if not g.n_secciones %}
+      <button class="enlace-boton peligro" name="accion" value="eliminar_grado" type="submit" onclick="return confirm('¿Eliminar {{ g.nombre }}?')">Quitar</button>
+      {% else %}<span class="nota" style="font-size:12px">{{ g.n_secciones }} secc.</span>{% endif %}
+    </form>
+    {% empty %}
+    <p class="nota" style="margin:0">Sin grados.</p>
+    {% endfor %}
+  </div>
+  {% endfor %}
+
+  <div class="tarjeta">
+    <div class="tarjeta-cab"><h2>Agregar grado</h2></div>
+    <form method="post" class="formulario" novalidate>
+      {% csrf_token %}<input type="hidden" name="accion" value="crear_grado">
+      {% include "panel/parciales/form_generico.html" %}
+      <div class="botones-form"><button class="btn primario" type="submit">{% icono "mas" 16 %}Agregar</button></div>
+    </form>
+  </div>
+</div>
+{% endblock %}
